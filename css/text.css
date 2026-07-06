@@ -1,0 +1,67 @@
+/* ==========================================================================
+   GLOBALNE STYLOWANIE TEKSTU
+   ========================================================================== */
+
+body {
+  /* 1. Czcionka i jej wygładzenie */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Twoja główna czcionka */
+  -webkit-font-smoothing: antialiased; /* Lepsze renderowanie na ekranach Mac/iOS */
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 2. Rozmiar i proporcje */
+  font-size: 16px;          /* Bazowy rozmiar tekstu */
+  line-height: 1.6;         /* Interlinia (odstęp między liniami) - kluczowa dla czytelności */
+  letter-spacing: 0.5px;    /* Odstęp między literami */
+
+  /* 3. Kolorystyka */
+  color: rgba(255,255,255,0.7);           /* Główny kolor tekstu (zamiast czystej czerni #000, która męczy wzrok) */
+
+}
+
+/* ==========================================================================
+   NAGŁÓWKI (H1 - H6)
+   ========================================================================== */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Helvetica Neue', Arial, sans-serif; /* Możesz użyć innej czcionki dla nagłówków */
+  color: rgba(255,255,255,0.7);           /* Ciemniejszy, bardziej kontrastowy kolor dla nagłówków */
+  font-weight: 700;         /* Grubość czcionki (pogrubienie) */
+  line-height: 1.2;         /* Nagłówki potrzebują mniejszej interlinii niż zwykły tekst */
+  margin-top: 1.5em;        /* Odstęp nad nagłówkiem */
+  margin-bottom: 0.5em;     /* Odstęp pod nagłówkiem */
+}
+
+/* Indywidualne rozmiary nagłówków (opcjonalnie) */
+h1 { font-size: 2.5rem; }   /* 2.5 raza większy niż bazowy (16px * 2.5 = 40px) */
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+
+/* ==========================================================================
+   ELEMENTY SPECJALNE (LINKI, AKAPITY, POGRUBIENIA)
+   ========================================================================== */
+
+p {
+  margin-bottom: 1rem;      /* Estetyczny odstęp między akapitami */
+}
+
+a {
+  color: rgba(255,255,255,0.7);           /* Globalny kolor linków */
+  text-decoration: none;    /* Usunięcie domyślnego podkreślenia */
+  transition: color 0.3s ease; /* Płynne przejście koloru przy najechaniu */
+}
+
+a:hover {
+  color: rgba(255,255,255,0.7);           /* Kolor linku po najechaniu myszką */
+  text-decoration: underline; /* Podkreślenie tylko przy najechaniu */
+}
+
+strong, b {
+  font-weight: bold;
+  color: rgba(255,255,255,0.7);           /* Mocniejsze wyróżnienie pogrubionego tekstu */
+}
+
+/* Selektor do zmiany koloru zaznaczanego tekstu na stronie */
+::selection {
+  background-color: #ffcc00; /* Kolor tła zaznaczenia */
+  color: rgba(255,255,255,0.7);           /* Kolor tekstu po zaznaczeniu */
+}

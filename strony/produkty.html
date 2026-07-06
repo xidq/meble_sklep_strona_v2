@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title data-i18n="nav_products">Title</title>
+    <link rel="stylesheet" href="../css/header.css">
+    <link rel="stylesheet" href="../css/gallery.css">
+    <link rel="stylesheet" href="../css/text.css">
+</head>
+<body>
+<div class="gallery-container">
+    <div class="gallery-grid" id="galleryGrid">
+    </div>
+</div>
+
+<script>
+    const grid = document.getElementById('galleryGrid');
+
+
+    function renderGallery(galleryData) {
+        galleryData.forEach((item) => {
+            const ajdi = item.id;
+            const itemAnchor = document.createElement('a');
+            itemAnchor.href = `item.html?id=${ajdi}`;
+            itemAnchor.className = 'gallery-item';
+
+            itemAnchor.innerHTML = `
+            <img
+                src="${item.path_256}"
+                srcset="${item.path_256} 256w, ${item.path_512} 512w"
+                sizes="(min-width: 2000px) 512px, 256px"
+                alt="${item.desc}"
+                loading="lazy"
+            >
+            <div class="overlay">${item.desc}</div>
+        `;
+
+            grid.appendChild(itemAnchor);
+        });
+    }
+
+    fetch('../img/img_front/images.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Nie udało się pobrać pliku JSON: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            renderGallery(data);
+        })
+        .catch(error => {
+            console.error('Błąd podczas ładowania galerii:', error);
+            grid.innerHTML = `<p style="color: red; padding: 20px;">Błąd ładowania galerii. Spróbuj odświeżyć stronę.</p>`;
+        });
+</script>
+</body>
+<script src="../js/auth_ui.js"></script>
+<script src="../js/lang.js"></script>
+</html>

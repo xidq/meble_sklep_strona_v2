@@ -1,0 +1,99 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: sans-serif;
+  margin: 30px;
+  /*padding: 20px;*/
+  background: rgb(20,20,20);
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.1);
+  padding: 10px 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+.nav-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  position: relative;
+}
+
+#logs {
+  background: #1e1e1e;
+  color: #00ff00;
+  padding: 15px;
+  border-radius: 5px;
+  height: 120px;
+  overflow-y: auto;
+  font-family: monospace;
+}
+button {
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none; border-radius: 4px;
+}
+button:disabled { background: #ccc; }
+.form-group { margin-bottom: 10px; }
+label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: rgba(0,0,0,0.05);
+  min-width: 280px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 15px;
+  z-index: 100;
+  /*background: #28a745;*/
+  border: 1px solid #ddd;
+}
+.dropdown.open .dropdown-content { display: block; }
+
+.header_btn { position: relative; display: inline-block; background: rgba(255, 255, 255,70); color: black; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.admin-link-btn { display: block; text-align: center; background: #28a745; color: white; padding: 10px; margin-top: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; }
+.admin-link-btn:hover { background: #218838; }
+.toggle-auth { color: #007bff; cursor: pointer; text-decoration: underline; margin-top: 10px; display: inline-block; font-size: 13px; }
+
+
+.input-error { border: 2px solid #dc3545 !important; background-color: #fff3f3 !important; }
+
+
+
+#language-switcher{
+  padding: 10px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  border-radius: 5px;
+  height: 39px;
+  width: 82px;
+}
+#language-switcher option {
+  background: rgba(0,0,0,0.9);
+  color: rgba(255,255,255,0.7);
+}

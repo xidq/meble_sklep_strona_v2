@@ -1,0 +1,91 @@
+:root {
+  /*--item-width: 256px;*/
+  --item-width: 30vmin;
+  /*--item-height: 256px;*/
+  --item-height: 30vmin;
+  --gap: 20px;
+}
+
+/*body {*/
+/*    margin: 0;*/
+/*    padding: 40px 0;*/
+/*    background-color: #121212;*/
+/*    font-family: system-ui, -apple-system, sans-serif;*/
+/*    overflow-x: hidden;*/
+/*}*/
+
+/* Kontener galerii - odpowiada za przewijanie w poziomie */
+.gallery-container {
+  width: 100%;
+  justify-items: center;
+  overflow-x: auto;
+  padding: 20px;
+  box-sizing: border-box;
+
+  /* Płynne przewijanie na telefonach */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Ukrywanie paska przewijania (opcjonalne, dla czystego wyglądu) */
+.gallery-container::-webkit-scrollbar {
+  display: none;
+}
+.gallery-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Siatka galerii - klucz do dwóch rzędów o zmiennej szerokości */
+.gallery-grid {
+
+  display: grid;
+  /* Dwa rzędy o stałej wysokości */
+  grid-template-rows: repeat(2, var(--item-height));
+  /* Kolumny dopasowują się automatycznie do liczby elementów */
+  grid-auto-flow: column;
+  grid-auto-columns: var(--item-width);
+  gap: var(--gap);
+
+  /* Szerokość dostosuje się do zawartości, pozwalając na scroll */
+  width: max-content;
+  padding-right: 40px; /* Margines na końcu listy */
+}
+
+/* Karta elementu (link) */
+.gallery-item {
+  display: block;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background-color: #1e1e1e;
+}
+
+.gallery-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(255,255,255,0.1);
+}
+
+/* Stylizacja obrazka */
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Podpis (np. nazwa folderu/pliku) */
+.gallery-item .overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  padding: 15px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}

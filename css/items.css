@@ -1,0 +1,118 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+/* Karta pojedynczego produktu */
+.product-card {
+  /*background: rgba(255,255,255, 0.1);*/
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 40px;
+  padding: 20px;
+  display: table;
+  width: 100%;
+}
+/* Układ dwukolumnowy za pomocą display: table-cell */
+.left-column {
+  display: table-cell;
+  width: 55%;
+  vertical-align: top;
+  padding-right: 30px;
+}
+.right-column {
+  display: table-cell;
+  width: 45%;
+  vertical-align: top;
+  /*background: #fafafa;*/
+  /*background: rgba(255, 255, 255, 0.05);*/
+  padding: 20px;
+  border-radius: 6px;
+}
+/* Główny kontener dużego zdjęcia */
+.main-image-container {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  overflow: hidden;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+.main-image-container img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+/* Miniaturki pod dużym zdjęciem */
+.thumbnails-container {
+  margin-top: 15px;
+  text-align: left;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+}
+.thumb-wrapper {
+  /*display: inline-block;*/
+
+  flex-direction: row;
+  /*aspect-ratio: 1 / 1;*/
+  /*height: 100%;*/
+  gap: 10px;
+  height: 68px;
+  width: 68px;
+  margin-right: 10px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.thumb-wrapper.active {
+  border-color: rgba(255,255,255,0.5);
+}
+.thumb-wrapper img {
+  display: block;
+  width: auto;
+  height: auto;
+}
+/* Dane produktu po prawej stronie */
+.product-title {
+  margin-top: 0;
+  font-size: 24px;
+  /*color: #333;*/
+  border-bottom: 2px solid #eaeaea;
+  padding-bottom: 10px;
+}
+.product-description {
+  font-size: 15px;
+  line-height: 1.6;
+  /*color: #666;*/
+  margin: 15px 0;
+}
+.product-specs {
+  margin-top: 20px;
+}
+.spec-item {
+  font-size: 14px;
+  margin-bottom: 8px;
+  /*color: #444;*/
+}
+.spec-label {
+  font-weight: bold;
+  /*color: #111;*/
+}
+
+/* RWD dla mniejszych ekranów - układ przechodzi w pionowy */
+@media (max-width: 768px) {
+  .product-card, .left-column, .right-column {
+    display: block;
+    width: 100%;
+  }
+  .left-column {
+    padding-right: 0;
+    margin-bottom: 20px;
+  }
+}
