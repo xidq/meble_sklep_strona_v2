@@ -6,6 +6,11 @@
   --gap: 20px;
 }
 
+body{
+  height: 80vmin;
+  /*width: 100vmin;*/
+  /*overflow: hidden;*/
+}
 /*body {*/
 /*    margin: 0;*/
 /*    padding: 40px 0;*/
@@ -16,9 +21,12 @@
 
 /* Kontener galerii - odpowiada za przewijanie w poziomie */
 .gallery-container {
-  width: 100%;
+  width: 100vw;
+  height: 100%;
   justify-items: center;
-  overflow-x: auto;
+  /*align-items: center;*/
+  overflow-x: auto;          /* Włącza pasek przewijania, gdy elementy wystają */
+  overflow-y: hidden;        /* Zapobiega ewentualnemu skakaniu góra/dół */
   padding: 20px;
   box-sizing: border-box;
 

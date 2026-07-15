@@ -13,46 +13,117 @@
     </div>
 </div>
 
+<!--<script>-->
+<!--    const grid = document.getElementById('galleryGrid');-->
+
+
+<!--    function renderGallery(galleryData) {-->
+<!--        galleryData.forEach((item) => {-->
+<!--            const ajdi = item.id;-->
+<!--            const itemAnchor = document.createElement('a');-->
+<!--            itemAnchor.href = `item.html?id=${ajdi}`;-->
+<!--            itemAnchor.className = 'gallery-item';-->
+
+<!--            itemAnchor.innerHTML = `-->
+<!--            <img-->
+<!--                src="${item.path_256}"-->
+<!--                srcset="${item.path_256} 256w, ${item.path_512} 512w"-->
+<!--                sizes="(min-width: 2000px) 512px, 256px"-->
+<!--                alt="${item.desc}"-->
+<!--                loading="lazy"-->
+<!--            >-->
+<!--            <div class="overlay">${item.desc}</div>-->
+<!--        `;-->
+
+<!--            grid.appendChild(itemAnchor);-->
+<!--        });-->
+<!--    }-->
+
+<!--    fetch('../data/router.json')-->
+<!--        .then(response => {-->
+<!--            if (!response.ok) {-->
+<!--                throw new Error('Nie udało się pobrać pliku JSON: ' + response.statusText);-->
+<!--            }-->
+<!--            return response.json();-->
+<!--        })-->
+<!--        .then(data => {-->
+<!--            renderGallery(data);-->
+<!--        })-->
+<!--        .catch(error => {-->
+<!--            console.error('Błąd podczas ładowania galerii:', error);-->
+<!--            grid.innerHTML = `<p style="color: red; padding: 20px;">Błąd ładowania galerii. Spróbuj odświeżyć stronę.</p>`;-->
+<!--        });-->
+<!--</script>-->
 <script>
     const grid = document.getElementById('galleryGrid');
 
+    // Funkcja renderująca pojedynczy element – wywoływana, gdy mamy już wszystkie dane
+    function renderItem(id, name, imgData) {
+        const itemAnchor = document.createElement('a');
+        itemAnchor.href = `item.html?id=${id}`;
+        itemAnchor.className = 'gallery-item';
 
-    function renderGallery(galleryData) {
-        galleryData.forEach((item) => {
-            const ajdi = item.id;
-            const itemAnchor = document.createElement('a');
-            itemAnchor.href = `item.html?id=${ajdi}`;
-            itemAnchor.className = 'gallery-item';
+        // Wyciągamy rozdzielczości dla wariantu pierwszego (var_1)
+        const p256 = imgData.var_1["256"];
+        const p512 = imgData.var_1["512"];
 
-            itemAnchor.innerHTML = `
+        itemAnchor.innerHTML = `
             <img
-                src="${item.path_256}"
-                srcset="${item.path_256} 256w, ${item.path_512} 512w"
+                src="${p256}"
+                srcset="${p256} 256w, ${p512} 512w"
                 sizes="(min-width: 2000px) 512px, 256px"
-                alt="${item.desc}"
+                alt="${name}"
                 loading="lazy"
             >
-            <div class="overlay">${item.desc}</div>
+            <div class="overlay">${name}</div>
         `;
 
-            grid.appendChild(itemAnchor);
-        });
+        grid.appendChild(itemAnchor);
     }
 
-    fetch('../img/img_front/images.json')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Nie udało się pobrać pliku JSON: ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            renderGallery(data);
-        })
-        .catch(error => {
+    // Główna funkcja ładowania galerii
+    async function loadGallery() {
+        try {
+            // 1. Pobieramy główny router
+            const response = await fetch('../data/router.json');
+            if (!response.ok) throw new Error('Błąd routera: ' + response.statusText);
+            const routerData = await response.json();
+
+            // 2. Mapujemy elementy i pobieramy ich szczegóły równolegle
+            const promises = routerData.map(async (item) => {
+                try {
+                    // Pobieramy plik produktu oraz zdjęcia jednocześnie dla danego przedmiotu
+                    const [resProduct, resImg] = await Promise.all([
+                        fetch(item.product),
+                        fetch(item.img)
+                    ]);
+
+                    if (!resProduct.ok || !resImg.ok) {
+                        throw new Error(`Nie udało się pobrać danych dla ${item.id}`);
+                    }
+
+                    const productData = await resProduct.json();
+                    const imgData = await resImg.json();
+
+                    // Renderujemy element od razu po pobraniu jego danych
+                    renderItem(item.id, productData.name_pl, imgData);
+                } catch (itemError) {
+                    console.error(`Błąd ładowania elementu ${item.id}:`, itemError);
+                    // Ignorujemy jeden zepsuty element, żeby reszta galerii się załadowała
+                }
+            });
+
+            // Czekamy na zakończenie wszystkich pobrań
+            await Promise.all(promises);
+
+        } catch (error) {
             console.error('Błąd podczas ładowania galerii:', error);
             grid.innerHTML = `<p style="color: red; padding: 20px;">Błąd ładowania galerii. Spróbuj odświeżyć stronę.</p>`;
-        });
+        }
+    }
+
+    // Odpalamy ładowanie
+    loadGallery();
 </script>
 </body>
 <script src="../js/auth_ui.js"></script>

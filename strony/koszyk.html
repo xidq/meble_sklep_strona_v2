@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <link rel="stylesheet" href="../css/header.css">
+  <link rel="stylesheet" href="../css/text.css">
+  <style>
+    /* Proste, surowe style dopasowane do struktury kolumnowej, dopóki nie wrzucisz własnego CSS */
+    .cart-wrapper { max-width: 1200px; margin: 40px auto; padding: 0 20px; font-family: sans-serif; }
+    .cart-title { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+    .cart-container { display: flex; gap: 30px; flex-wrap: wrap; }
+    .cart-items { flex: 2; min-width: 300px; }
+    .cart-summary { flex: 1; min-width: 280px; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; height: fit-content; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+    .item-info { flex: 1; }
+    .item-title { font-weight: bold; margin: 0 0 5px 0; }
+    .item-meta { font-size: 12px; color: #666; margin: 0; }
+    .item-controls { display: flex; align-items: center; gap: 15px; }
+    .qty-btn { background: #e2e8f0; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+    .remove-btn { background: #fed7d7; color: #c53030; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .checkout-btn { width: 100%; padding: 12px; background: #2b6cb0; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 16px; }
+    .checkout-btn:hover { background: #2b5c8f; }
+    .empty-msg { text-align: center; color: #718096; padding: 40px 0; }
+  </style>
+</head>
+<body>
+  <div class="cart-wrapper">
+    <h1 class="cart-title">Twój Koszyk</h1>
+
+    <div class="cart-container">
+      <!-- Lista elementów -->
+      <div class="cart-items" id="cart-items-list">
+        <!-- Generowane dynamicznie przez JS -->
+      </div>
+
+      <!-- Podsumowanie po prawej stronie -->
+      <div class="cart-summary">
+        <h3>Podsumowanie</h3>
+        <div style="display: flex; justify-content: space-between; margin: 20px 0; font-weight: bold; font-size: 18px;">
+          <span>Suma (szacowana):</span>
+          <span id="cart-total-price">0.00 zł</span>
+        </div>
+        <button class="checkout-btn" id="checkout-submit-btn">Przejdź do płatności (API Console)</button>
+      </div>
+    </div>
+  </div>
+  <script src="../js/auth_ui.js"></script>
+  <script src="../js/lang.js"></script>
+  <script src="../js/cart.js"></script>
+</body>
+</html>

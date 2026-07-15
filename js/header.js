@@ -6,8 +6,8 @@ const headerHTML = `
     </a>
 
     <div>
-        <button class="header_btn" onclick="window.location.href = '../strony/produkty.html'" data-i18n="nav_products"> meble </button>
-        <button class="header_btn" onclick="window.location.href = '../strony/kontakt.html'" data-i18n="nav_contact"> meble </button>
+        <button class="header_btn" onclick="window.location.href = '/produkty'" data-i18n="nav_products"> meble </button>
+        <button class="header_btn" onclick="window.location.href = '/kontakt'" data-i18n="nav_contact"> meble </button>
     </div>
 
     <div class="nav-controls">
@@ -24,11 +24,11 @@ const headerHTML = `
             <h3 id="authTitle" style="margin-top: 0;">Logowanie do systemu</h3>
             <div class="form-group">
                 <label>Nazwa użytkownika:</label>
-                <input type="text" id="username" value="admin_jan">
+                <input type="text" id="username" value="">
             </div>
             <div class="form-group">
                 <label>Hasło:</label>
-                <input type="password" id="password" value="tajne_haslo_123">
+                <input type="password" id="password" value="">
             </div>
                 <button id="authBtn" style="width: 100%;">Zaloguj</button>
                 <span id="authToggleLink" class="toggle-auth">Nie masz konta? Zarejestruj się</span>
@@ -40,7 +40,7 @@ const headerHTML = `
             <p>Użytkownik: <span id="profileUser" style="font-weight: bold;">-</span></p>
             <p>Rola: <span id="profileRole" style="font-weight: bold;">-</span></p>
 
-            <a href="../strony/admin.html" id="adminPanelLink" class="admin-link-btn" style="display: none;">⚙️ Panel Administratora</a>
+            <a href=strony/admin.html" id="adminPanelLink" class="admin-link-btn" style="display: none;">⚙️ Panel Administratora</a>
 
             <button id="logoutBtn" style="background: #dc3545; width: 100%; margin-top: 15px;">Wyloguj się 🚪</button>
         </div>

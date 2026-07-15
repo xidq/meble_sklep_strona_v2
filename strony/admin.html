@@ -68,44 +68,81 @@
 
             <div class="form-panel">
                 <h2 data-i18n="admin_panel_item_add_new" id="formTitle">🛠️ Dodaj Nowy Produkt</h2>
-                <input type="hidden" id="p_id" value="0">
+<!--                <input type="hidden" id="p_id" value="0">-->
 
                 <div class="form-group">
-                    <label data-i18n="admin_panel_item_name" >Nazwa produktu:</label>
-                    <input type="text" id="p_name">
+                    <label>ID Produktu:</label>
+                    <input type="text" id="p_id" value="0" readonly style="background:#eee;">
                 </div>
                 <div class="form-group">
-                    <label data-i18n="admin_panel_item_desc" >Opis:</label>
-                    <textarea id="p_desc"></textarea>
+                    <label>Name_ID Produktu:</label>
+                    <input type="text" id="p_name_id" value="0"> <!-- readonly style="background:#eee;" --> <!-- readonly gdy jest edycja, gdy tworzenie to pole musi być możliwe do wypełnienia -->
                 </div>
+
                 <div class="form-group">
-                    <label data-i18n="admin_panel_item_price" >Cena netto:</label>
+                    <label data-i18n="admin_panel_item_name_pl">Nazwa produktu:</label>
+                    <input type="text" id="p_name_pl">
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="admin_panel_item_name_en">Nazwa produktu:</label>
+                    <input type="text" id="p_name_en">
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="admin_panel_item_desc_pl">Opis Pl:</label>
+                    <textarea id="p_desc_pl"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="admin_panel_item_desc_en">Opis En:</label>
+                    <textarea id="p_desc_en"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="admin_panel_item_price">Cena netto:</label>
                     <input type="number" id="p_price" step="0.01">
                 </div>
-                <div class="form-group">
-                    <label>VAT (%):</label>
-                    <input type="number" id="p_vat" value="23.00" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label>Ścieżka do modelu 3D (.gltf):</label>
-                    <input type="text" id="p_url" value="/assets/models/">
-                </div>
+
                 <div class="form-group">
                     <label>Szerokość (cm):</label>
                     <input type="number" id="p_width" step="0.1">
                 </div>
+
                 <div class="form-group">
                     <label>Wysokość (cm):</label>
                     <input type="number" id="p_height" step="0.1">
                 </div>
+
                 <div class="form-group">
                     <label>Głębokość (cm):</label>
                     <input type="number" id="p_depth" step="0.1">
                 </div>
+
                 <div class="form-group">
-                    <label>Sugerowana skala renderu:</label>
-                    <input type="number" id="p_scale" value="1.0" step="0.1">
+                    <label>Szerokość (cm):</label>
+                    <input type="number" id="p_wood_qua" step="0.1">
                 </div>
+
+                <div class="form-group">
+                    <label>Wysokość (cm):</label>
+                    <input type="number" id="p_metal_qua" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label>Głębokość (cm):</label>
+                    <input type="number" id="p_glass_qua" step="0.1">
+                </div>
+
+                <div class="form-group" id="p_uploadSection"><!-- widoczny WYŁĄCZNIE GDY JEST PRZEDMIOT EDYTOWANY (NIE TWORZONY) -->
+                    <p style="font-size: 0.85em; color: #666;">Format nazwy: <b>nazwa_wersja_wariant</b> (np. szafka_1_1.avif)</p> <!-- nad przyciskiem i input -->
+                    <div>
+                        <input type="file" id="p_imageInput" multiple accept=".png,.jpg,.jpeg,.webp,.avif" style="margin-bottom: 10px;"> <!-- jedno obok drugiego -->
+                        <button id="p_uploadImageBtn" style="background: #28a745; width: 100%;">🚀 Wgraj na serwer</button>
+                    </div>
+                </div>
+
+
                 <button id="saveProductBtn" style="background: #007bff; width: 100%;">Zapisz na serwerze</button>
                 <p id="adminMessage" style="font-weight: bold; margin-top: 10px;"></p>
             </div>
@@ -117,7 +154,7 @@
           <h3>📐 Prześlij zdjęcia produktu</h3>
           <p style="font-size: 0.85em; color: #666;">Format nazwy: <b>nazwa_wersja_wariant</b> (np. szafka_1_1.avif)</p>
 
-          <input type="file" id="imageInput" accept=".png,.jpg,.jpeg,.webp,.avif" style="margin-bottom: 10px;">
+          <input type="file" id="imageInput" multiple accept=".png,.jpg,.jpeg,.webp,.avif" style="margin-bottom: 10px;">
           <button id="uploadImageBtn" style="background: #28a745; width: 100%;">🚀 Wgraj na serwer</button>
 
           <div id="uploadStatus" style="margin-top: 10px; font-weight: bold;"></div>

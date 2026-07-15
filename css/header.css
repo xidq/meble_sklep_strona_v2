@@ -64,7 +64,7 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   display: none;
   position: absolute;
   right: 0;
-  background-color: rgba(0,0,0,0.05);
+  background-color: rgb(30,30,30);
   min-width: 280px;
   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
   border-radius: 4px;
@@ -84,7 +84,38 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
 .input-error { border: 2px solid #dc3545 !important; background-color: #fff3f3 !important; }
 
 
+#basketMenu {
+  position: relative;
+  padding: 10px 15px;
+  background-color: #2d3748; /* Przykładowy ciemny kolor */
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.basket-icon {
+  font-size: 1.2rem;
+}
+
+/* Styl czerwonego bąbelka z cyfrą */
+.basket-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #e53e3e; /* Intensywny czerwony */
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 50%;
+  padding: 2px 6px;
+  min-width: 12px;
+  text-align: center;
+  /* Ukrywamy licznik, gdy koszyk jest pusty */
+  display: none;
+}
 #language-switcher{
   padding: 10px;
   background: rgba(255,255,255,0.1);
