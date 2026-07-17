@@ -1,5 +1,5 @@
 // auth_ui.js
-
+const API_BASE = `https://${window.location.hostname}:8444`;
 const headerHTML = `
 <header>
     <a href="../index.html" style="text-decoration: none;">
@@ -73,9 +73,9 @@ const headerHTML = `
                     <h3 style="margin-top: 0;">Mój Profil</h3>
                     <p>Użytkownik: <span id="profileUser" style="font-weight: bold;">-</span></p>
                     <p>Rola: <span id="profileRole" style="font-weight: bold;">-</span></p>
-                    <a href="../strony/user_page.html" id="userPanelLink" class="user-link-btn" style="display: none;">⚙️ Panel Użytkownika</a>
-                    <a href="../strony/email.html" id="emailInboxLink" class="email-link-btn" style="display: none;">✉️ Skrzynka E-mail</a>
-                    <a href="../strony/admin.html" id="adminPanelLink" class="admin-link-btn" style="display: none;">⚙️ Panel Administratora</a>
+                    <a href="/user_page" id="userPanelLink" class="user-link-btn" style="display: none;">⚙️ Panel Użytkownika</a>
+                    <a href="/email" id="emailInboxLink" class="email-link-btn" style="display: none;">✉️ Skrzynka E-mail</a>
+                    <a href="/admin" id="adminPanelLink" class="admin-link-btn" style="display: none;">⚙️ Panel Administratora</a>
                     <button id="logoutBtn" style="background: #dc3545; width: 100%; margin-top: 15px;">Wyloguj się 🚪</button>
                 </div>
     
@@ -182,6 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileRole = document.getElementById('profileRole');
   const adminPanelLink = document.getElementById('adminPanelLink');
   const userPanelLink = document.getElementById('userPanelLink');
+  const emailInboxLink = document.getElementById('emailInboxLink');
 
   let currentUser = null;
   let isLoginMode = true;
@@ -317,11 +318,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const payload = isLoginMode
         ? { username, password }
-        : { username, password, confirm_password: confirmPassword, email, name: username };
-    const endpoint = isLoginMode ? '/usr/login' : '/usr/usr';
+        : { username, password, confirm_password: confirmPassword, email, name: username, registration_conditions: termsChecked};
+    const endpoint = isLoginMode ? '/api/login' : '/api/register';
 
     try {
-      const response = await fetch(`http://127.0.0.1:8080${endpoint}`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -341,11 +342,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (isLoginMode) {
         currentUser = data;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        // 🔥 USTAW CIASTECZKO Z TOKENEM DLA GO
-        if (data.token) {
-          document.cookie = `token=${data.token}; path=/; Secure; SameSite=Strict; max-age=86400`;
-        }
+        // localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        // localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        // USTAW CIASTECZKO Z TOKENEM DLA GO
+        // if (data.token) {
+        //   document.cookie = `token=${data.token}; path=/; Secure; SameSite=Strict; max-age=86400`;
+        // }
 
         // Zmiana interfejsu dropdownu
         authFormSection.style.display = 'none';
@@ -398,14 +400,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // WYLOGOWANIE
-  logoutBtn.addEventListener('click', () => {
+  logoutBtn.addEventListener('click', async() => {
     currentUser = null;
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('userToken');
+    // localStorage.removeItem('currentUser');
+    // localStorage.removeItem('userToken');
 
-    // 🔥 USUŃ CIASTECZKO TOKEN
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; Secure; SameSite=Strict';
-    document.cookie = 'token=; path=/; max-age=0; Secure; SameSite=Strict';
+    // USUŃ CIASTECZKO TOKEN
+    // document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; Secure; SameSite=Strict';
+    // document.cookie = 'token=; path=/; max-age=0; Secure; SameSite=Strict';
+
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (err) {
+      console.error("Błąd podczas wylogowywania na serwerze:", err);
+    }
 
     // Odpalenie zewnętrznej funkcji z websocket.js
     if (typeof disconnectWebSocket === "function") {
@@ -421,37 +429,86 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // PRZYWRACANIE SESJI PO POWROCIE NA STRONĘ
-  function restoreSession() {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      currentUser = JSON.parse(storedUser);
+  // function restoreSession() {
+  //   const storedUser = localStorage.getItem('currentUser');
+  //   if (storedUser) {
+  //     currentUser = JSON.parse(storedUser);
+  //
+  //     const storedToken = localStorage.getItem('userToken');
+  //     if (storedToken) {
+  //       document.cookie = `token=${storedToken}; path=/; Secure; SameSite=Strict; max-age=86400`;
+  //     }
+  //
+  //     // Zmiana interfejsu dropdownu
+  //     authFormSection.style.display = 'none';
+  //     profileSection.style.display = 'block';
+  //     dropdownToggleBtn.textContent = `👤 ${currentUser.username}`;
+  //     profileUser.textContent = currentUser.username;
+  //     profileRole.textContent = currentUser.role;
+  //
+  //     // Widoczność zakładki Admina
+  //     if (currentUser.role === "Admin") {
+  //       if (adminPanelLink) adminPanelLink.style.display = 'block';
+  //     } else {
+  //       if (adminPanelLink) adminPanelLink.style.display = 'none';
+  //     }
+  //     updateUIPerRole(currentUser.role);
+  //
+  //     // Automatyczne połączenie z WebSocketem
+  //     if (typeof connectWebSocket === "function") {
+  //       connectWebSocket(currentUser);
+  //     }
+  //   }
+  // }
 
-      const storedToken = localStorage.getItem('userToken');
-      if (storedToken) {
-        document.cookie = `token=${storedToken}; path=/; Secure; SameSite=Strict; max-age=86400`;
-      }
+  // async function loadUserData() {
+  //   try {
+  //     const res = await fetch('/api/me');
+  //     if (res.ok) {
+  //       const data = await res.json();
+  //       // Ustaw UI (pokaż profil, przyciski)
+  //       currentUser = data;
+  //       // ... aktualizacja interfejsu
+  //     } else {
+  //       // Użytkownik niezalogowany – pokaż formularz logowania
+  //     }
+  //   } catch(e) {
+  //     // obsługa błędu
+  //   }
+  // }
+  async function loadUserData() {
+    try {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        currentUser = data;
 
-      // Zmiana interfejsu dropdownu
-      authFormSection.style.display = 'none';
-      profileSection.style.display = 'block';
-      dropdownToggleBtn.textContent = `👤 ${currentUser.username}`;
-      profileUser.textContent = currentUser.username;
-      profileRole.textContent = currentUser.role;
+        // UI – pokaż profil, schowaj logowanie
+        authFormSection.style.display = 'none';
+        profileSection.style.display = 'block';
+        dropdownToggleBtn.textContent = `👤 ${currentUser.username}`;
+        profileUser.textContent = currentUser.username;
+        profileRole.textContent = currentUser.role;
+        updateUIPerRole(currentUser.role);
 
-      // Widoczność zakładki Admina
-      if (currentUser.role === "Admin") {
-        if (adminPanelLink) adminPanelLink.style.display = 'block';
+        // Połącz WebSocket (przez serwer Go, nie bezpośrednio do Rusta)
+        if (typeof connectWebSocket === "function") {
+          connectWebSocket(currentUser); // przekazujemy dane użytkownika
+        }
       } else {
-        if (adminPanelLink) adminPanelLink.style.display = 'none';
+        // Użytkownik niezalogowany – pokaż formularz
+        authFormSection.style.display = 'block';
+        profileSection.style.display = 'none';
+        dropdownToggleBtn.textContent = "👤 User Menu";
       }
-      updateUIPerRole(currentUser.role);
-
-      // Automatyczne połączenie z WebSocketem
-      if (typeof connectWebSocket === "function") {
-        connectWebSocket(currentUser);
-      }
+    } catch(e) {
+      console.error("Błąd ładowania danych użytkownika:", e);
+      // W razie błędu pokaż formularz
+      authFormSection.style.display = 'block';
+      profileSection.style.display = 'none';
     }
   }
+
   // ==========================================
   // OBSŁUGA KOSZYKA (DODANE ELEMENTY)
   // ==========================================
@@ -486,6 +543,13 @@ document.addEventListener("DOMContentLoaded", () => {
     updateBasketDOM();
   };
   // document.addEventListener('DOMContentLoaded', showCookieFooter);
-  restoreSession();
+  // restoreSession();
+  loadUserData().catch(err => {
+    console.error('Nie udało się załadować danych użytkownika:', err);
+  });
+  // if (typeof connectWebSocket === "function") {
+  //   connectWebSocket(); // bez currentUser
+  // }
   updateBasketDOM(); // Wywołanie odświeżenia licznika po wstrzyknięciu HTML
 });
+

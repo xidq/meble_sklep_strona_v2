@@ -1,0 +1,92 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # --- ETAP 1: TESTOWANIE ---
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # KLUCZOWY KROK: Tworzymy foldery na bazę i pliki na maszynie CI
+      - name: Create DB and Files directories
+        run: |
+          mkdir -p data
+          mkdir -p src/api
+
+      - name: Run tests
+        env:
+          # Podajemy lokalne ścieżki i klucze testowe bezpośrednio (nie potrzebujesz do tego secrets!)
+          DATABASE_URL: sqlite:data/data.db
+          FILES_URL: src/api/
+          JWT_SECRET_KEY: tymczasowy_klucz_do_testow_w_ci_12345
+          PEPPER_KEY: tymczasowy_pepper_do_testow_w_ci_12345
+          USERS_DB_ENCRYPTION_KEY: tymczasowy_szyfr_do_testow_w_ci_12345
+          FRONTEND_SERVER: http://localhost:3000
+        run: cargo test
+
+  merge-to-main:
+    needs: test
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Daje domyślnemu tokenowi prawo do zapisu/pushowania do repo
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }} # Używamy domyślnego, wbudowanego tokenu
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge dev into master and push
+        run: |
+          git checkout master
+          git merge origin/dev --no-ff -m "chore: auto-merge dev to master"
+          git push origin master
+  # --- ETAP 2: BUDOWANIE ---
+  build-and-push:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

@@ -1,43 +1,70 @@
 // =========================================================================
 // finalizacja.js - OBSŁUGA FORMULARZA I WYSYŁKA ZAMÓWIENIA DO RUST API
 // =========================================================================
+async function fetchUserData() {
+    try {
+        const response = await fetch('/api/usr/data', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`, // Zakładam, że tu przechowujesz token
+                'Content-Type': 'application/json'
+            }
+        });
 
-document.addEventListener('DOMContentLoaded', () => {
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (err) {
+        console.error("Błąd pobierania danych użytkownika:", err);
+        return null;
+    }
+}
+document.addEventListener('DOMContentLoaded', async () => {
     renderCartSummary();
     setupInvoiceToggle();
-    checkUserAuthStatus();
-    setupLiveValidation(); // Uruchomienie nasłuchiwania na opuszczanie pól
-    setupInputRestrictions(); // <-- DODAJ TO TUTAJ
+    setupLiveValidation();
+    setupInputRestrictions();
 
-    // Główny przycisk "Przejdź do płatności" na stronie finalizacji
-    const checkoutBtn = document.getElementById('checkout-submit-btn');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', handleOrderSubmission);
+    // Nowa logika: automatyczne uzupełnianie
+    const userData = await fetchUserData();
+    if (userData) {
+        const emailInput = document.getElementById('customer-email');
+        const nameInput = document.getElementById('customer-name');
+        // const surnameInput = document.getElementById('customer-surname'); // Odkomentuj jak wdrożysz
+
+        if (emailInput && userData.email) emailInput.value = userData.email;
+        if (nameInput && userData.username) nameInput.value = userData.username;
+        // if (surnameInput && userData.surname) surnameInput.value = userData.surname;
+
+        // Opcjonalnie: zapis ID użytkownika do form
+        document.getElementById('checkout-form').setAttribute('data-user-id', userData.id || '');
     }
+
+    const checkoutBtn = document.getElementById('checkout-submit-btn');
+    if (checkoutBtn) checkoutBtn.addEventListener('click', handleOrderSubmission);
 });
 
 // 1. Sprawdzanie czy użytkownik jest zalogowany (wstrzykiwanie danych do formularza)
-function checkUserAuthStatus() {
-    // Zakładam, że Twoje auth_ui.js zapisuje dane o zalogowanym użytkowniku w localStorage lub sesji
-    const currentUser = JSON.parse(localStorage.getItem('user')) || null;
-
-    const emailInput = document.getElementById('customer-email');
-    const nameInput = document.getElementById('customer-name');
-    const surnameInput = document.getElementById('customer-surname');
-
-    if (currentUser) {
-        // Jeśli jest zalogowany, blokujemy pola lub uzupełniamy automatycznie
-        if (emailInput && currentUser.email) {
-            emailInput.value = currentUser.email;
-            emailInput.disabled = true; // Zalogowany nie musi (i nie powinien) zmieniać maila zamówienia
-        }
-        if (nameInput && currentUser.firstName) nameInput.value = currentUser.firstName;
-        if (surnameInput && currentUser.lastName) surnameInput.value = currentUser.lastName;
-
-        // Zapisujemy ID użytkownika w ukrytym polu, aby łatwo go wyciągnąć
-        document.getElementById('checkout-form').setAttribute('data-user-id', currentUser.id || '');
-    }
-}
+// function checkUserAuthStatus() {
+//     // Zakładam, że Twoje auth_ui.js zapisuje dane o zalogowanym użytkowniku w localStorage lub sesji
+//     const currentUser = JSON.parse(localStorage.getItem('user')) || null;
+//
+//     const emailInput = document.getElementById('customer-email');
+//     const nameInput = document.getElementById('customer-name');
+//     const surnameInput = document.getElementById('customer-surname');
+//
+//     if (currentUser) {
+//         // Jeśli jest zalogowany, blokujemy pola lub uzupełniamy automatycznie
+//         if (emailInput && currentUser.email) {
+//             emailInput.value = currentUser.email;
+//             emailInput.disabled = true; // Zalogowany nie musi (i nie powinien) zmieniać maila zamówienia
+//         }
+//         if (nameInput && currentUser.firstName) nameInput.value = currentUser.firstName;
+//         if (surnameInput && currentUser.lastName) surnameInput.value = currentUser.lastName;
+//
+//         // Zapisujemy ID użytkownika w ukrytym polu, aby łatwo go wyciągnąć
+//         document.getElementById('checkout-form').setAttribute('data-user-id', currentUser.id || '');
+//     }
+// }
 
 /// 2. Obsługa pokazywania/ukrywania pól faktury przez Checkbox
 function setupInvoiceToggle() {
@@ -269,24 +296,27 @@ async function handleOrderSubmission(e) {
 
         invoiceData = { company_name: companyName, nip, street: invStreet, city: invCity, zip_code: invZip };
     }
+
     const enrichedItems = await Promise.all(basket.map(async (item) => {
         try {
-            // Wywołujemy Twój endpoint: /api/products/name_id/{id}
-            const response = await fetch(`http://localhost:8080/api/products/name_id/${item.name_id}`);
+            const response = await fetch(`/api/products/by-name/${item.name_id}`);
             if (!response.ok) throw new Error("Nie znaleziono produktu");
 
             const productData = await response.json();
 
             return {
                 zamowienie_id: 0,
-                product_id: productData.id, // TO JEST TO PRAWDZIWE ID, KTÓREGO BRAKUJE
+                // POPRAWKA: Zabezpieczenie na wypadek gdyby pole id w bazie nazywało się inaczej (np. product_id)
+                product_id: productData.id || productData.product_id || 0,
                 ilosc: item.quantity,
                 cena: item.display?.price || 0,
+                // POPRAWKA: Dodanie wymaganego pola vat do pozycji zamówienia
+                vat: productData.vat || 0.0,
                 konfiguracja: item.type === 'configured' ? item.configuration : null
             };
         } catch (err) {
             console.error("Błąd podczas pobierania danych produktu:", item.name_id, err);
-            return null; // Lub obsłuż błąd inaczej
+            return null;
         }
     }));
 
@@ -296,56 +326,56 @@ async function handleOrderSubmission(e) {
         return;
     }
 
-    // MAPOWANIE KOSZYKA
-    const cleanItems = basket.map(item => ({
-        zamowienie_id: 0, // Ignorowane przez serwer (wypełniane w SQL)
-        product_id: item.product_id, // Upewnij się, że masz tu ID produktu
-        ilosc: item.quantity,
-        cena: item.display?.price || 0, // Cena jednostkowa (ważne dla bazy)
-        konfiguracja: item.type === 'configured' ? item.configuration : null
-    }));
+    // POPRAWKA: Budowanie spłaszczonego obiektu 'dane' dla #[serde(flatten)] w Rust
+    const daneObj = {
+        id: 0,
+        user_id: userId ? parseInt(userId) : null,
+        date: "",
+        imie: name,
+        nazwisko: surname,
+        email: email,
+        tel: phone,
+        ulica: street,
+        miasto: city,
+        kod_pocztowy: zipCode,
+        cena: basket.reduce((sum, item) => sum + (item.display?.price * item.quantity), 0),
+        vat: 0.0,
+        numer_fv: "",
+        oplacone: false
+    };
 
-    // BUDOWANIE PAYLOADU ZGODNEGO Z CaloscioweZamowienie
+    if (wantsInvoice && invoiceData) {
+        daneObj.nazwa_firmy = invoiceData.company_name;
+        daneObj.nip = invoiceData.nip;
+        daneObj.fv_ulica = invoiceData.street;
+        daneObj.fv_miasto = invoiceData.city;
+        daneObj.fv_kod_pocztowy = invoiceData.zip_code;
+    }
+
     const finalPayload = {
-        dane: {
-            id: 0, // Inicjalizowane na serwerze
-            user_id: userId ? parseInt(userId) : null,
-            date: "", // Generowane na serwerze
-            email: email,
-            tel: phone,
-            ulica: street,
-            miasto: city,
-            kod_pocztowy: zipCode,
-            faktura_dane: invoiceData ? {
-                ulica: invoiceData.street,
-                miasto: invoiceData.city,
-                kod_pocztowy: invoiceData.zip_code,
-                nip: invoiceData.nip,
-                nazwa_firmy: invoiceData.company_name
-            } : null,
-            cena: basket.reduce((sum, item) => sum + (item.display?.price * item.quantity), 0),
-            numer_fv: "", // Generowane na serwerze
-            oplacone: false
-        },
+        dane: daneObj,
         przedmioty: enrichedItems
     };
 
     console.log("🚀 WYSYŁANIE DO RUST API:", JSON.stringify(finalPayload, null, 2));
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const token = currentUser ? currentUser.token : null;
+
     try {
-        const response = await fetch('http://localhost:8080/api/order', {
+        const response = await fetch('/api/usr/actions/order', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '' // DODAJ TO!
+                'Authorization': token ? `Bearer ${token}` : ''
             },
             body: JSON.stringify(finalPayload)
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Błąd serwera podczas przetwarzania zamówienia.");
+            // POPRAWKA: Czytamy błąd jako tekst (Rust przy 422 zwraca surowy komunikat błędu deserializacji)
+            const errorText = await response.text();
+            console.error("Surowa odpowiedź błędu z serwera Rust:", errorText);
+            throw new Error(errorText || "Błąd serwera (422) podczas przetwarzania struktury zamówienia.");
         }
 
         const result = await response.json();

@@ -98,10 +98,10 @@ function renderSingleProduct(fullData, index, container) {
 
   container.appendChild(card);
 
-  // 🔥 DODAJ RENDEROWANIE MINIATUREK
+  // DODAJ RENDEROWANIE MINIATUREK
   const thumbsContainer = document.getElementById(`thumbs-container-${index}`);
   if (thumbsContainer && imagesList.length > 0) {
-    console.log('✅ RENDERUJĘ MINIATURKI, ilość:', imagesList.length); // DODAJ
+    console.log('RENDERUJĘ MINIATURKI, ilość:', imagesList.length); // DODAJ
     imagesList.forEach((imgObj, idx) => {
       const thumbWrapper = document.createElement('div');
       thumbWrapper.className = 'thumb-wrapper';
@@ -126,7 +126,7 @@ function renderSingleProduct(fullData, index, container) {
 
       thumbsContainer.appendChild(thumbWrapper);
     });
-  } else {    console.log('❌ NIE RENDERUJĘ MINIATUREK – thumbsContainer lub imagesList puste!');}
+  } else {    console.log('NIE RENDERUJĘ MINIATUREK – thumbsContainer lub imagesList puste!');}
 
   // Koszyk działający w oparciu o aktualny język (dla nazwy wyświetlanej)
   const cartBtn = card.querySelector('.add-to-cart-btn');

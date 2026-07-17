@@ -1,13 +1,13 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    // Walidacja ról dla skrzynki
-    if (!user || (user.role !== 'Legituser' && user.role !== 'Admin')) {
-        document.body.innerHTML = "<h1>403 - Access Denied</h1>";
-        return;
-    }
-    // Domyślny start na folderze inbox
-    changeFolder('inbox');
-});
+// document.addEventListener("DOMContentLoaded", () => {
+//     const user = JSON.parse(localStorage.getItem('currentUser'));
+//     // Walidacja ról dla skrzynki
+//     if (!user || (user.role !== 'Legituser' && user.role !== 'Admin')) {
+//         document.body.innerHTML = "<h1>403 - Access Denied</h1>";
+//         return;
+//     }
+//     // Domyślny start na folderze inbox
+//     changeFolder('inbox');
+// });
 
 let currentFolder = 'inbox';
 // Przykładowe dane z flagami
@@ -93,12 +93,12 @@ function changeFolder(folder) {
     renderEmails();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    // WALIDACJA ROLI
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user || (user.role !== 'Legituser' && user.role !== 'Admin')) {
-        document.body.innerHTML = "<h1>403 - Access Denied</h1>";
-        return;
-    }
-    renderEmails();
-});
+// document.addEventListener("DOMContentLoaded", () => {
+//     // WALIDACJA ROLI
+//     const user = JSON.parse(localStorage.getItem('currentUser'));
+//     if (!user || (user.role !== 'Legituser' && user.role !== 'Admin')) {
+//         document.body.innerHTML = "<h1>403 - Access Denied</h1>";
+//         return;
+//     }
+//     renderEmails();
+// });

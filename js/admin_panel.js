@@ -1,8 +1,8 @@
-
+// admin_panel.js
 // --- KONFIGURACJA ---
-const BACKEND_URL = "127.0.0.1";
-const WS_URL = `ws://${BACKEND_URL}:8080/ws`;
-const API_URL = `http://${BACKEND_URL}:8080/api/products`;
+// const BACKEND_URL = "127.0.0.1";
+// const WS_URL = `ws://${BACKEND_URL}:8080/wss`;
+// const API_URL = `http://${BACKEND_URL}:8080/api/products`;
 
 // --- ZMIENNE GLOBALNE ---
 let currentUser = null;
@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Start systemu
     connectWebSocket();
+    // fetchProducts();
     checkAuth();
 });
 newProductModeBtn.addEventListener('click', () => {
@@ -61,7 +62,7 @@ newProductModeBtn.addEventListener('click', () => {
 
 // --- LOGIKA WEBSOCKET ---
 function connectWebSocket() {
-    socket = new WebSocket(WS_URL);
+    socket = new WebSocket("/ws");
 
     socket.onopen = () => {
         console.log("[WS] Połączono z serwerem!");
@@ -81,20 +82,37 @@ function connectWebSocket() {
 }
 
 // --- LOGIKA PRODUKTÓW ---
-async function checkAuth() {
-    const storedUser = localStorage.getItem('currentUser');
-    if (!storedUser) {
-        window.location.href = "../index.html";
-        return;
-    }
-    currentUser = JSON.parse(storedUser);
-    if (currentUser.role !== "Admin") {
-        window.location.href = "../index.html";
-        return;
-    }
-    document.getElementById('adminPanel').style.display = 'block';
-    fetchProducts();
-}
+// async function checkAuth() {
+//     const storedUser = localStorage.getItem('currentUser');
+//     if (!storedUser) {
+//         window.location.href = "../index.html";
+//         return;
+//     }
+//     currentUser = JSON.parse(storedUser);
+//     if (currentUser.role !== "Admin") {
+//         window.location.href = "../index.html";
+//         return;
+//     }
+//     document.getElementById('adminPanel').style.display = 'block';
+//     fetchProducts();
+// }
+// async function checkAuth() {
+//     try {
+//         const res = await fetch('/api/me', { credentials: 'include' });
+//         if (!res.ok) throw new Error('Not authenticated');
+//         const data = await res.json();
+//         currentUser = data;
+//         window.currentUser = data; // sync with global
+//         if (currentUser.role !== "Admin") {
+//             window.location.href = "../index.html";
+//             return;
+//         }
+//         document.getElementById('adminPanel').style.display = 'block';
+//         fetchProducts();
+//     } catch (e) {
+//         window.location.href = "../index.html";
+//     }
+// }
 
 function renderProductsList() {
     productsContainer.innerHTML = "";
@@ -114,7 +132,7 @@ function renderProductsList() {
 
 async function fetchProducts() {
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch("/api/getproducts");
         if (!response.ok) throw new Error("Błąd pobierania");
         allProducts = await response.json();
         renderProductsList();
@@ -197,7 +215,7 @@ saveProductBtn.addEventListener('click', async () => {
     console.log("Wysyłam obiekt:", productPayload);
 
     const method = productPayload.id === 0 ? 'POST' : 'PUT';
-    const requestUrl = productPayload.id === 0 ? API_URL : `${API_URL}/${productPayload.id}`;
+    const requestUrl = productPayload.id === 0 ? "/api/getproducts" : `/api/getproducts/${productPayload.id}`;
 
     try {
         const response = await fetch(requestUrl, {
@@ -222,3 +240,43 @@ saveProductBtn.addEventListener('click', async () => {
         adminMessage.textContent = "Błąd połączenia z serwerem.";
     }
 });
+async function checkAuth() {
+    try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) throw new Error('Not authenticated');
+        const data = await res.json();
+        currentUser = data;
+        window.currentUser = data;
+
+        // Jeśli backend nie zwraca tokena, pobierz go z localStorage (z poprzedniego logowania)
+        if (!currentUser.token) {
+            const stored = localStorage.getItem('currentUser');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                currentUser.token = parsed.token;
+            }
+        }
+
+        if (currentUser.role !== "Admin") {
+            window.location.href = "../index.html";
+            return;
+        }
+        document.getElementById('adminPanel').style.display = 'block';
+        fetchProducts();
+    } catch (e) {
+        console.error("Błąd autoryzacji:", e);
+        // Spróbuj z localStorage jako fallback
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            currentUser = JSON.parse(stored);
+            window.currentUser = currentUser;
+            if (currentUser.role === "Admin") {
+                document.getElementById('adminPanel').style.display = 'block';
+                fetchProducts();
+                return;
+            }
+        }
+        // Jeśli wszystko zawiedzie – redirect na stronę główną
+        window.location.href = "../index.html";
+    }
+}

@@ -3,7 +3,7 @@
 let socket = null;
 
 // Funkcja wywoływana po udanym logowaniu lub przywróceniu sesji
-function connectWebSocket(user) {
+function connectWebSocket(currentUser) {
   const wsSection = document.getElementById('wsSection');
   const statusEl = document.getElementById('status');
   const sendBtn = document.getElementById('sendBtn');
@@ -11,10 +11,10 @@ function connectWebSocket(user) {
 
   // Pokazanie sekcji (jeśli istnieje na danej podstronie)
   if (wsSection) wsSection.style.display = 'block';
-  if (userDisplay) userDisplay.textContent = `${user.username} (${user.role})`;
+  if (userDisplay) userDisplay.textContent = `${currentUser.username} (${currentUser.role})`;
 
   // Połączenie z WS
-  socket = new WebSocket('ws://127.0.0.1:8080/ws');
+  socket = new WebSocket(`/ws`);
 
   socket.addEventListener('open', () => {
     if (statusEl) {
@@ -23,7 +23,7 @@ function connectWebSocket(user) {
     }
     if (sendBtn) sendBtn.disabled = false;
 
-    socket.send(JSON.stringify({ type: "auth", username: user.username, role: user.role }));
+    // socket.send(JSON.stringify({ type: "auth", username: currentUser.username, role: currentUser.role }));
   });
 
   socket.addEventListener('message', (e) => logMessage(`[Serwer]: ${e.data}`));

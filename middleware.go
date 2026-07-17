@@ -28,19 +28,26 @@ func cacheMiddleware(next http.Handler) http.Handler {
     })
 }
 
-// Security Headers
 func securityHeaders(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         w.Header().Set("X-Content-Type-Options", "nosniff")
         w.Header().Set("X-Frame-Options", "DENY")
         w.Header().Set("X-XSS-Protection", "1; mode=block")
         w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-        w.Header().Set("Content-Security-Policy", "default-src 'self'")
+
+        // ROZSZERZONA CSP
+        csp := "default-src 'self'; " +
+               "connect-src 'self' wss: https:; " + // WebSocket + HTTPS
+               "img-src 'self' data:; " +            // Obrazy z data URI
+               "style-src 'self' 'unsafe-inline'; " + // dla inline CSS
+               "script-src 'self' 'unsafe-inline';"   // dla inline JS
+        w.Header().Set("Content-Security-Policy", csp)
+
         next.ServeHTTP(w, r)
     })
 }
 
-// Gzip Compression dla plików statycznych
+// Gzip Compression, pliki statyczne
 func gzipMiddleware(next http.Handler) http.Handler {
     return gziphandler.GzipHandler(next)
 }

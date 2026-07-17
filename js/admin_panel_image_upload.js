@@ -38,7 +38,7 @@
 //
 //     if (response.ok) {
 //       statusDiv.style.color = "green";
-//       statusDiv.textContent = "✅ Zdjęcie wysłane i dodane do kolejki!";
+//       statusDiv.textContent = "Zdjęcie wysłane i dodane do kolejki!";
 //       fileInput.value = ""; // czyścimy input
 //     } else {
 //       throw new Error(await response.text());
@@ -63,26 +63,37 @@ document.getElementById('p_uploadImageBtn').addEventListener('click', async () =
     return;
   }
 
-  // FormData do wysyłki
+  // Tworzymy JEDNO FormData dla wszystkich plików, żeby nie blokować bazy SQLite w Ruście równoległymi zapytaniami
+  const formData = new FormData();
   for (const file of files) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      // URL z parametrem name_id w ścieżce, zgodnie z Twoim komentarzem
-      const response = await fetch(`http://127.0.0.1:8080/api/images/upload/${nameId}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${currentUser.token}` },
-        body: formData
-      });
-
-      if (!response.ok) throw new Error(await response.text());
-      console.log(`Wysłano: ${file.name}`);
-    } catch (error) {
-      console.error(`Błąd: ${error.message}`);
-    }
+    // Klucz może być "files" lub "file" - Rust przechodzi po prostu przez next_field() i ignoruje nazwę klucza
+    formData.append("files", file);
   }
-  alert("Zakończono proces przesyłania.");
+
+  try {
+    // Wysyłamy żądanie do serwera Go
+    const response = await fetch(`/api/admin/produkty/${nameId}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentUser.token}` },
+      body: formData // Przeglądarka sama ustawi nagłówek Content-Type wraz z boundary, nie wpisuj go ręcznie!
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Status serwera: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Serwer przyjął pliki:", data);
+
+    // Sukces – informujemy użytkownika
+    alert("Zdjęcia zostały pomyślnie przesłane na serwer! Przetwarzanie i konwersja AVIF trwają w tle.");
+    fileInput.value = ""; // Czyszczenie inputu po sukcesie
+
+  } catch (error) {
+    console.error("Błąd przesyłania:", error);
+    alert(`Wystąpił błąd podczas przesyłania: ${error.message}`);
+  }
 });
 document.getElementById('uploadImageBtn').addEventListener('click', async () => {
   const fileInput = document.getElementById('imageInput');
@@ -113,7 +124,7 @@ document.getElementById('uploadImageBtn').addEventListener('click', async () => 
     // 1. Walidacja rozszerzenia
     if (!allowedExtensions.includes(extension)) {
       statusDiv.style.color = "red";
-      statusDiv.innerHTML += `❌ Snajper: pominięto plik "${file.name}" (niepoprawne rozszerzenie).<br>`;
+      statusDiv.innerHTML += `Snajper: pominięto plik "${file.name}" (niepoprawne rozszerzenie).<br>`;
       failCount++;
       continue; // Przechodzimy do kolejnego pliku
     }
@@ -121,7 +132,7 @@ document.getElementById('uploadImageBtn').addEventListener('click', async () => 
     // 2. Walidacja wzorca nazwy
     if (!namePattern.test(nameWithoutExt)) {
       statusDiv.style.color = "red";
-      statusDiv.innerHTML += `❌ Pominięto plik "${file.name}": wymagany format to nazwa_wersja_wariant.<br>`;
+      statusDiv.innerHTML += `Pominięto plik "${file.name}": wymagany format to nazwa_wersja_wariant.<br>`;
       failCount++;
       continue;
     }
@@ -133,7 +144,7 @@ document.getElementById('uploadImageBtn').addEventListener('click', async () => 
     try {
       statusDiv.innerHTML += `Wysyłanie: "${file.name}"...<br>`;
 
-      const response = await fetch('http://127.0.0.1:8080/api/images/upload', { //tutaj po upload/ ma być name_id przedmiotu, który jest edytowany
+      const response = await fetch('/api/admin/produkty/', { //tutaj po upload/ ma być name_id przedmiotu, który jest edytowany
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${currentUser.token}`
@@ -149,7 +160,7 @@ document.getElementById('uploadImageBtn').addEventListener('click', async () => 
       }
     } catch (error) {
       statusDiv.style.color = "red";
-      statusDiv.innerHTML += `❌ Błąd wysyłania pliku "${file.name}": ${error.message}<br>`;
+      statusDiv.innerHTML += `Błąd wysyłania pliku "${file.name}": ${error.message}<br>`;
       failCount++;
     }
   }
@@ -157,7 +168,7 @@ document.getElementById('uploadImageBtn').addEventListener('click', async () => 
   // Podsumowanie operacji po zakończeniu pętli
   if (failCount === 0) {
     statusDiv.style.color = "green";
-    statusDiv.innerHTML = `✅ Sukces! Pomyślnie wysłano wszystkie pliki (${successCount}).`;
+    statusDiv.innerHTML = `Sukces! Pomyślnie wysłano wszystkie pliki (${successCount}).`;
     fileInput.value = ""; // Czyszczenie inputu tylko, gdy wszystko poszło gładko
   } else {
     statusDiv.style.color = successCount > 0 ? "orange" : "red";

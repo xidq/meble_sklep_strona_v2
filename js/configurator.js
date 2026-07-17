@@ -30,7 +30,7 @@ const meshesByType = {
 const pristineMaterials = { Wood: null, Metal: null, Glass: null };
 const activeMaterials = { Wood: null, Metal: null, Glass: null };
 
-// Cache tekstur – URL → BABYLON.Texture
+// Cache tekstur – URL -> BABYLON.Texture
 const textureCache = new Map();
 
 document.addEventListener(
