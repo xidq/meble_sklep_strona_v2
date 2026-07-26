@@ -1,23 +1,35 @@
 * {
   box-sizing: border-box;
+ font-family: 'Helvetica Neue', Arial, sans-serif;
 }
 body {
+  /*padding-top: 5rem;*/
   font-family: sans-serif;
-  margin: 30px;
-  /*padding: 20px;*/
+  width: calc(100vw - 16px);
+  /*height: calc(100vh - (16px + 5rem));*/
+  height: 100vh;
+  overflow-y: clip;
+  /*margin: 2rem;*/
   background: rgb(20,20,20);
 }
+
 header {
+  position: fixed;
+  width: 100%;
+  height: 5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255,255,255,0.1);
-  padding: 10px 20px;
+  background: hsl(204, 0%, 13%);
   border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+  box-shadow: 0 0 2rem rgba(255,255,255,0.1);
+  padding: 0 2rem 0 2rem;
+  left: 0;
+  top: 0;
+  z-index: 999;
 }
 .nav-controls {
+  background-color: transparent;
   display: flex;
   gap: 15px;
   align-items: center;
@@ -37,7 +49,7 @@ button {
   padding: 10px 20px;
   font-size: 14px;
   cursor: pointer;
-  background: #007bff;
+  /*background: #007bff;*/
   color: white;
   border: none; border-radius: 4px;
 }
@@ -48,17 +60,29 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
 
 
 .dropdown {
+  width: 8rem;
   position: relative;
   display: inline-block;
+  justify-content: center;
+  align-items: center;
+  justify-items: center;
+  align-content: center;
 }
 .dropdown-btn {
-  background: #6c757d;
-  color: white;
-  border: none;
+  background: transparent;
+  color: hsla(204, 0%, 100%, 0.7);
+  border: 1px solid hsla(0, 0%, 100%, 0.2);
   padding: 10px 15px;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+  transition: box-shadow 1.5s ease;
+}
+.dropdown-btn:hover {
+  color: hsla(204, 0%, 100%, 0.9);
+
+  border: 1px solid hsla(28, 100%, 50%, 0.3);
+  box-shadow: 0 0 16px hsla(28, 100%, 50%, 0.5);
 }
 .dropdown-content {
   display: none;
@@ -75,9 +99,81 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
 }
 .dropdown.open .dropdown-content { display: block; }
 
-.header_btn { position: relative; display: inline-block; background: rgba(255, 255, 255,70); color: black; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.admin-link-btn { display: block; text-align: center; background: #28a745; color: white; padding: 10px; margin-top: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; }
-.admin-link-btn:hover { background: #218838; }
+ /*/ ------------------------------------------------------ /*/
+@property --a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Definiujemy zmienne dla kolorów gradientu, aby można było je płynnie zmieniać */
+@property --g-color {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+.header_btn {
+  position: relative;
+  height: 66px;
+  width: 20vw;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /*border: none;*/
+  border-radius: 8px;
+  cursor: pointer;
+  /*font-weight: bold;*/
+  font-size: 1.5rem;
+  color: hsla(204, 0%, 100%, 0.7);
+  /* Wnętrze przycisku: stały kolor */
+  background-color: hsl(204, 0%, 13%);
+}
+
+.glow {
+
+
+  /* Definiujemy ramkę jako gradient przy użyciu zmiennych */
+  background-image:
+          linear-gradient(hsl(204, 0%, 13%), hsl(204, 0%, 13%)),
+          conic-gradient(from var(--a), transparent, var(--g-color));
+  background-clip: padding-box, border-box;
+  background-origin: border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 black;
+  /* Transition dla zmiennej koloru (działa płynnie!) */
+  transition: --g-color 1s ease, box-shadow 1.5s ease;
+  animation: a 2s linear infinite;
+  filter: glow(rgba(255,255,255,1));
+}
+
+.glow:hover {
+  --g-color: hsla(28, 100%, 50%, 1); /* Płynne przejście koloru w 1s */
+  box-shadow: 0 8px 2rem rgba(255, 100, 0, 1);
+  /*filter: drop-shadow(0 0 8px rgba(255, 120, 0, 0.6));*/
+
+  /*box-shadow: 0 0 20px 2px rgba(255, 120, 0, 0.5);*/
+  /*filter: glow(rgba(255, 120, 0, 0.8), 10px);*/
+}
+
+@keyframes a {
+  to { --a: 1turn }
+}
+
+.admin-link-btn {
+  display: block;
+  text-align: center;
+  background: #28a745;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+
+/*.admin-link-btn:hover { background: #218838; }*/
 .toggle-auth { color: #007bff; cursor: pointer; text-decoration: underline; margin-top: 10px; display: inline-block; font-size: 13px; }
 
 
@@ -127,4 +223,17 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
 #language-switcher option {
   background: rgba(0,0,0,0.9);
   color: rgba(255,255,255,0.7);
+}
+
+@media screen and (orientation: portrait){
+  body{
+    overflow-y: auto;
+    overflow-x: clip;
+  }
+  .header_btn{
+    width: fit-content;
+    border: 1px solid hsla(0, 0%, 100%, 0.2);
+    font-size: 1.2rem;
+  }
+  
 }

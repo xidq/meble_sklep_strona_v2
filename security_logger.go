@@ -1,34 +1,34 @@
 package main
 
 import (
-    "log"
-    "os"
-//     "time"
-    "fmt"
+	"log"
+	"os"
+	//     "time"
+	"fmt"
 )
 
 var securityLog *log.Logger
 
 func init() {
-    // Otwórz plik z logami bezpieczeństwa
-    file, err := os.OpenFile(config.StaticDir + "security.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-    if err != nil {
-        log.Printf("Cannot open security.log: %v", err)
-        // Fallback – pisz do stdout
-        securityLog = log.New(os.Stdout, "[SECURITY] ", log.LstdFlags)
-        return
-    }
-    securityLog = log.New(file, "", log.LstdFlags)
+	// Otwórz plik z logami bezpieczeństwa
+	file, err := os.OpenFile("security.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Cannot open security.log: %v", err)
+		// Fallback – pisz do stdout
+		securityLog = log.New(os.Stdout, "[SECURITY] ", log.LstdFlags)
+		return
+	}
+	securityLog = log.New(file, "", log.LstdFlags)
 }
 
 // LogSecurity – zapisuje zdarzenie z kontekstem
 func LogSecurity(event string, details map[string]interface{}) {
-    if securityLog == nil {
-        return
-    }
-    msg := fmt.Sprintf("%s | ", event)
-    for k, v := range details {
-        msg += fmt.Sprintf("%s=%v ", k, v)
-    }
-    securityLog.Println(msg)
+	if securityLog == nil {
+		return
+	}
+	msg := fmt.Sprintf("%s | ", event)
+	for k, v := range details {
+		msg += fmt.Sprintf("%s=%v ", k, v)
+	}
+	securityLog.Println(msg)
 }

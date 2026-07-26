@@ -5,9 +5,17 @@ const headerHTML = `
         <h1 data-i18n="welcome" style="margin: 0; font-size: 24px; color: black;">System i WebSocket</h1>
     </a>
 
-    <div>
-        <button class="header_btn" onclick="window.location.href = '/produkty'" data-i18n="nav_products"> meble </button>
-        <button class="header_btn" onclick="window.location.href = '/kontakt'" data-i18n="nav_contact"> meble </button>
+<!--    <div class="header_btn_wrap">-->
+<!--        <button class="header_btn" onclick="window.location.href = '/produkty'" data-i18n="nav_products"> meble </button>-->
+<!--        <button class="header_btn" onclick="window.location.href = '/kontakt'" data-i18n="nav_contact"> kontakt </button>-->
+<!--    </div>-->
+    <div class="header_btn_wrap">
+        <button class="header_btn glow" onclick="window.location.href = '/produkty'">
+            <span class="btn-text" data-i18n="nav_products">meble</span>
+        </button>
+        <button class="header_btn glow" onclick="window.location.href = '/kontakt'">
+            <span class="btn-text" data-i18n="nav_contact">kontakt</span>
+        </button>
     </div>
 
     <div class="nav-controls">

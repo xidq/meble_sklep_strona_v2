@@ -1,0 +1,269 @@
+.mini_body {
+    background-color: #121212;
+    color: #eee;
+    font-family: system-ui, -apple-system, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===== Animowane tło ===== */
+.mini_body::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    animation: bgFloat 12s ease-in-out infinite alternate;
+    z-index: 0;
+}
+
+
+.contact-wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1400px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ===== Nagłówek (góra) ===== */
+.contact-header {
+    text-align: center;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+    /*transform: translateY(-30px);*/
+    margin-top: 5rem;
+    /*top: 6rem;*/
+}
+
+
+.contact-header h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: hsla(28, 100%, 50%, 1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    animation: shimmer 3s infinite alternate, glowPulse 2s infinite;
+}
+
+.contact-header p {
+    font-size: 1rem;
+    opacity: 0.7;
+    margin-top: 2px;
+    animation: fadeIn 1s 0.3s both;
+}
+
+
+/* ===== Główny grid (2 kolumny) ===== */
+.contact-main {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 25px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ===== LEWA KOLUMNA ===== */
+
+
+.left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    animation: slideLeft 0.9s ease 0.2s both;
+}
+.dane-kontaktowe{
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    color: hsla(0, 0%, 100%, 0.7);
+}
+.dane-kontaktowe span{
+    font-size: 1rem;
+}
+
+/* Formularz – lewa dolna część */
+.form-section {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 20px;
+    padding: 16px 20px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.8s ease 0.4s both;
+}
+
+.form-section h2 {
+    font-size: 1.3rem;
+    margin-bottom: 2px;
+    background: hsla(28, 100%, 50%, 1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.form-section .sub {
+    opacity: 0.6;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 8px;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-bottom: 2px;
+    color: #ccc;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    max-height: 10vh;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.85rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    outline: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: hsla(28, 100%, 50%, 1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.btn-submit {
+    /*background: linear-gradient(135deg, hsla(28, 100%, 50%, 1), #ffd200);*/
+    padding: 10px 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: hsla(28, 0%, 100%, 0.7);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.5px;
+    align-self: flex-start;
+    position: relative;
+    overflow: hidden;
+}
+.btn-submit.glow {
+    /* Dodaj transition dla właściwości, które chcesz animować */
+    transition: transform 0.5s ease, --g-color 1s ease, box-shadow 1.5s ease;
+}
+
+.btn-submit::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    opacity: 0;
+    transition: opacity 0.4s;
+    transform: scale(0.5);
+}
+
+.btn-submit:hover::after {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.btn-submit:hover {
+    transform: scale(1.06) translateY(-2px);
+}
+
+.btn-submit:active {
+    transform: scale(0.95);
+}
+
+/* ===== PRAWA KOLUMNA ===== */
+.right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: slideRight 0.9s ease 0.3s both;
+}
+
+
+.map-wrapper {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.map-wrapper iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    filter: invert(90%) hue-rotate(180deg) saturate(0.6);
+}
+
+@media screen and (orientation: portrait) {
+    .mini_body {
+        height: auto;
+    }
+    .contact-main {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        height: auto;
+    }
+
+    .right-col {
+        height: 40vh;
+        /*min-height: 250px;*/
+        width: 100%;
+    }
+
+    .map-wrapper {
+        height: 100%;
+        width: 100%;
+    }
+
+    .contact-header {
+        margin-top: 1rem;
+    }
+}

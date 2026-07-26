@@ -1,235 +1,245 @@
 package main
+
 // main.go
 import (
-    "context"
-    "log"
-    "net/http"
-    "os"
-    "os/signal"
-    "path/filepath"
-    "strings"
-    "syscall"
-    "time"
-    "net/http/httputil"
-    "net/url"
-    "crypto/tls"
-    "github.com/gorilla/websocket"
-//     "regexp"
+	"context"
+	"crypto/tls"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/gorilla/websocket"
+	//     "regexp"
 )
 
-// var upgrader = websocket.Upgrader{
-//     CheckOrigin: func(r *http.Request) bool { return true },
-// }
+//	var upgrader = websocket.Upgrader{
+//	    CheckOrigin: func(r *http.Request) bool { return true },
+//	}
 var upgrader = websocket.Upgrader{
-    CheckOrigin: func(r *http.Request) bool {
-        origin := r.Header.Get("Origin")
-        allowedOrigin := "https://" + config.AdresWWW + ":" + config.PortWWW
-        return origin == allowedOrigin
-    },
+	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		allowedOrigin := "https://" + config.AdresWWW + ":" + config.PortWWW
+		return origin == allowedOrigin
+	},
 }
 
 func main() {
-    config = LoadConfig()
+	config = LoadConfig()
 
-    if os.Getenv("JWT_SECRET_KEY") == "" {
-        log.Fatal("JWT_SECRET_KEY must be set in .env – required for JWT verification")
-    }
-    //ws
-    wwwMux := http.NewServeMux()
+	if os.Getenv("JWT_SECRET_KEY") == "" {
+		log.Fatal("JWT_SECRET_KEY must be set in .env – required for JWT verification")
+	}
+	//ws
+	wwwMux := http.NewServeMux()
 
-    apiProxy := httputil.NewSingleHostReverseProxy(&url.URL{
-        Scheme: "https",
-        Host:   config.AdresWWW + ":" + config.PortAPI,
-    })
-    apiProxy.Transport = &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-    }
+	apiProxy := httputil.NewSingleHostReverseProxy(&url.URL{
+		Scheme: "https",
+		Host:   config.AdresWWW + ":" + config.PortAPI,
+	})
+	apiProxy.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 
-    // WSZYSTKIE ŻĄDANIA /api/* SĄ PRZEKIEROWYWANE NA 8444
-    wwwMux.Handle("/api/", apiProxy)
+	// WSZYSTKIE ŻĄDANIA /api/* SĄ PRZEKIEROWYWANE NA 8444
+	wwwMux.Handle("/api/", apiProxy)
 
-    wwwMux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-        http.ServeFile(w, r, filepath.Join(config.StaticDir, "robots.txt"))
-    })
-    wwwMux.HandleFunc("/license.txt", func(w http.ResponseWriter, r *http.Request) {
-        http.ServeFile(w, r, filepath.Join(config.StaticDir, "license.txt"))
-    })
-    wwwMux.Handle("/css/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Blokada wyświetlania katalogów
-        path := strings.TrimPrefix(r.URL.Path, "/css/")
-        if path == "" || strings.HasSuffix(path, "/") {
-            serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
-            return
-        }
-        // Serwuje plik z bezpieczeństwem, cache i gzip
-        handler := securityHeaders(cacheMiddleware(gzipMiddleware(
-            http.StripPrefix("/css/", http.FileServer(http.Dir(filepath.Join(config.StaticDir, "css")))),
-        )))
-        handler.ServeHTTP(w, r)
-    }))
-    wwwMux.Handle("/js/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        path := strings.TrimPrefix(r.URL.Path, "/js/")
-        if path == "" || strings.HasSuffix(path, "/") {
-            serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
-            return
-        }
-        handler := securityHeaders(cacheMiddleware(gzipMiddleware(
-            http.StripPrefix("/js/", http.FileServer(http.Dir(filepath.Join(config.StaticDir, "js")))),
-        )))
-        handler.ServeHTTP(w, r)
-    }))
+	wwwMux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(config.StaticDir, "robots.txt"))
+	})
+	wwwMux.HandleFunc("/license.txt", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(config.StaticDir, "license.txt"))
+	})
+	wwwMux.Handle("/css/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Blokada wyświetlania katalogów
+		path := strings.TrimPrefix(r.URL.Path, "/css/")
+		if path == "" || strings.HasSuffix(path, "/") {
+			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
+			return
+		}
+		// Serwuje plik z bezpieczeństwem, cache i gzip
+		handler := securityHeaders(cacheMiddleware(gzipMiddleware(
+			http.StripPrefix("/css/", http.FileServer(http.Dir(filepath.Join(config.StaticDir, "css")))),
+		)))
+		handler.ServeHTTP(w, r)
+	}))
+	wwwMux.Handle("/js/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/js/")
+		if path == "" || strings.HasSuffix(path, "/") {
+			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
+			return
+		}
+		handler := securityHeaders(cacheMiddleware(gzipMiddleware(
+			http.StripPrefix("/js/", http.FileServer(http.Dir(filepath.Join(config.StaticDir, "js")))),
+		)))
+		handler.ServeHTTP(w, r)
+	}))
 
-    wwwMux.Handle("/data/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        path := strings.TrimPrefix(r.URL.Path, "/data/")
+	wwwMux.Handle("/data/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/data/")
 
-        if path == "" || strings.HasSuffix(path, "/") {
-            serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
-            return
-        }
+		if path == "" || strings.HasSuffix(path, "/") {
+			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
+			return
+		}
 
-        // ZABEZPIECZENIE PRZED PATH TRAVERSAL
-        fullPath := filepath.Join(config.DataDir, path)
-        cleanPath := filepath.Clean(fullPath)
+		// ZABEZPIECZENIE PRZED PATH TRAVERSAL
+		fullPath := filepath.Join(config.DataDir, path)
+		cleanPath := filepath.Clean(fullPath)
 
-        // check czy ścieżka znajduje się wewnątrz DataDir
-        dataDirClean := filepath.Clean(config.DataDir)
-        if !strings.HasPrefix(cleanPath, dataDirClean+string(os.PathSeparator)) && cleanPath != dataDirClean {
-            serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nieprawidłowa ścieżka.")
-            return
-        }
-    info, err := os.Stat(fullPath)
-    if err != nil {
-        serveErrorPage(w, r, http.StatusNotFound, "Nie znaleziono pliku", "Plik '"+path+"' nie istnieje.")
-        return
-    }
-    if info.IsDir() {
-        serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
-        return
-    }
+		// check czy ścieżka znajduje się wewnątrz DataDir
+		dataDirClean := filepath.Clean(config.DataDir)
+		if !strings.HasPrefix(cleanPath, dataDirClean+string(os.PathSeparator)) && cleanPath != dataDirClean {
+			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nieprawidłowa ścieżka.")
+			return
+		}
+		info, err := os.Stat(fullPath)
+		if err != nil {
+			serveErrorPage(w, r, http.StatusNotFound, "Nie znaleziono pliku", "Plik '"+path+"' nie istnieje.")
+			return
+		}
+		if info.IsDir() {
+			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
+			return
+		}
 
-    // Cache-Control na podstawie typu pliku
-    ext := strings.ToLower(filepath.Ext(path))
-    switch ext {
-    // Zdjęcia i grafiki dostają długi cache (rok)
-    case ".avif", ".webp", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico":
-        w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-        // nagłówki usuwane |no-cache| w razie jak jakiś middleware by się zapomniał i dodał
-        w.Header().Del("Pragma")
-        w.Header().Del("Expires")
+		// Cache-Control na podstawie typu pliku
+		ext := strings.ToLower(filepath.Ext(path))
+		switch ext {
+		// Zdjęcia i grafiki dostają długi cache (rok)
+		case ".avif", ".webp", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico":
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			// nagłówki usuwane |no-cache| w razie jak jakiś middleware by się zapomniał i dodał
+			w.Header().Del("Pragma")
+			w.Header().Del("Expires")
 
-    // Wszystko inne (np. pliki konfiguracyjne, JSON-y, dane tekstowe) ma zablokowany cache
-    default:
-        w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-        w.Header().Set("Pragma", "no-cache")
-        w.Header().Set("Expires", "0")
-    }
+		// Wszystko inne (np. pliki konfiguracyjne, JSON-y, dane tekstowe) ma zablokowany cache
+		default:
+			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+			w.Header().Set("Pragma", "no-cache")
+			w.Header().Set("Expires", "0")
+		}
 
-    // "Bezpieczne" serwowanie pliku
-    http.ServeFile(w, r, fullPath)
-}))
+		// "Bezpieczne" serwowanie pliku
+		http.ServeFile(w, r, fullPath)
+	}))
 
-    // WEBSOCKET
-    wwwMux.HandleFunc("/ws", handleWebSocket)
+	// WEBSOCKET
+	wwwMux.HandleFunc("/ws", handleWebSocket)
 
-    // HEALTH CHECK
-    wwwMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
-        w.Write([]byte(`{"status":"ok"}`))
-    })
+	// HEALTH CHECK
+	wwwMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
+	})
 
-    // ROUTING STRON (z autoryzacją)
-    wwwMux.HandleFunc("/", handlePages)
+	// ROUTING STRON (z autoryzacją)
+	wwwMux.HandleFunc("/", handlePages)
 
-    // SERWER API – CORS + Rate Limit
-    apiMux := http.NewServeMux()
+	// SERWER API – CORS + Rate Limit
+	apiMux := http.NewServeMux()
 
-    // Endpointy dla Panelu Admina (Frontend -> Go proxy do Rusta)
-    apiMux.HandleFunc("/api/admin/produkty/", uploadFilesHandler)
+	// Endpointy dla Panelu Admina (Frontend -> Go proxy do Rusta)
+	apiMux.HandleFunc("/api/admin/produkty/", uploadFilesHandler)
+	// Zapewne masz coś w tym stylu (mux, chi, lub standardowy http.ServeMux):
+	apiMux.HandleFunc("/api/products", getProductsProxyHandler)  // <-- Dla POST/GET
+	apiMux.HandleFunc("/api/products/", getProductsProxyHandler) // <-- Dla PUT/DELETE z ID
+	// Endpointy zwrotne, międzyserwerowe
+	apiMux.HandleFunc("/api/produkty/", rustFilesUploadHandler)
+	apiMux.HandleFunc("/api/upload/json/", rustJsonUploadHandler)
+	apiMux.HandleFunc("/api/products/by-name/", getProductByNameIdProxyHandler)
+	// Endpoint bazowy do pobierania listy i tworzenia użytkownika (POST / GET)
+	apiMux.HandleFunc("/api/admin/usr", adminUsersProxyHandler)
 
-    // Endpointy zwrotne, międzyserwerowe
-    apiMux.HandleFunc("/api/produkty/", rustFilesUploadHandler)
-    apiMux.HandleFunc("/api/upload/json/", rustJsonUploadHandler)
-    apiMux.HandleFunc("/api/products/by-name/", getProductByNameIdProxyHandler)
+	// Endpoint z parametrem do pobierania pojedynczego i edycji (GET / PUT / DELETE)
+	apiMux.HandleFunc("/api/admin/usr/", adminUsersProxyHandler)
+	apiMux.HandleFunc("/api/admin/check_response/", adminResponseCheckProxyHandler)
 
-    apiMux.HandleFunc("/api/login", loginProxyHandler)
-    apiMux.HandleFunc("/api/usr/data", getUserOwnData)
-    apiMux.HandleFunc("/api/usr/account", userAccountOperations)
-    apiMux.HandleFunc("/api/usr/account/", userAccountOperations)
-    apiMux.HandleFunc("/api/usr/orders", getUserOwnOrders)
-    apiMux.HandleFunc("/api/usr/actions/order", putNewUserOrder)
-    apiMux.HandleFunc("/api/getproducts", getProductsProxyHandler)
-    apiMux.HandleFunc("/api/getproducts/", getProductsProxyHandler)
-    apiMux.HandleFunc("/api/register", registerProxyHandler)
-    apiMux.HandleFunc("/api/logout", logoutHandler)
-    apiMux.HandleFunc("/api/me", meHandler)
+	apiMux.HandleFunc("/api/login", loginProxyHandler)
+	apiMux.HandleFunc("/api/usr/data", getUserOwnData)
+	apiMux.HandleFunc("/api/usr/account", userAccountOperations)
+	apiMux.HandleFunc("/api/usr/account/", userAccountOperations)
+	apiMux.HandleFunc("/api/usr/orders", getUserOwnOrders)
+	apiMux.HandleFunc("/api/usr/actions/order", putNewUserOrder)
+	apiMux.HandleFunc("/api/getproducts", getProductsProxyHandler)
+	apiMux.HandleFunc("/api/getproducts/", getProductsProxyHandler)
+	apiMux.HandleFunc("/api/register", registerProxyHandler)
+	apiMux.HandleFunc("/api/logout", logoutHandler)
+	apiMux.HandleFunc("/api/me", meHandler)
 
-    // CORS dla API
-    corsHandler := func(h http.Handler) http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            w.Header().Set("Access-Control-Allow-Origin", "https://" +config.AdresWWW + ":" + config.PortWWW)
-            w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-            w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-            w.Header().Set("Access-Control-Allow-Credentials", "true")
+	// CORS dla API
+	corsHandler := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "https://"+config.AdresWWW+":"+config.PortWWW)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-            if r.Method == "OPTIONS" {
-                w.WriteHeader(http.StatusOK)
-                return
-            }
-            h.ServeHTTP(w, r)
-        })
-    }
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			h.ServeHTTP(w, r)
+		})
+	}
 
-    // API z CORS + Rate Limit
-    apiHandler := rateLimitMiddleware(corsHandler(apiMux))
+	// API z CORS + Rate Limit
+	apiHandler := rateLimitMiddleware(corsHandler(apiMux))
 
-    portWWW := config.PortWWW
-    portAPI := config.PortAPI
-    adresWWW := config.AdresWWW
-//     adresAPI := config.RustHost
+	portWWW := config.PortWWW
+	portAPI := config.PortAPI
+	adresWWW := config.AdresWWW
+	//     adresAPI := config.RustHost
 
-    // SERWER WWW
-    srvWWW := &http.Server{
-//         Addr:    ":" + portWWW,
-        Addr:    adresWWW + ":" + portWWW,
-        Handler: wwwMux,
-    }
+	// SERWER WWW
+	srvWWW := &http.Server{
+		//         Addr:    ":" + portWWW,
+		Addr:    adresWWW + ":" + portWWW,
+		Handler: wwwMux,
+	}
 
-    go func() {
-        log.Printf("🌐 WWW Server on https://%s:%s", adresWWW, portWWW)
-        if err := srvWWW.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && err != http.ErrServerClosed {
-            log.Fatal("WWW Server: ", err)
-        }
-    }()
+	go func() {
+		log.Printf("🌐 WWW Server on https://%s:%s", adresWWW, portWWW)
+		if err := srvWWW.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && err != http.ErrServerClosed {
+			log.Fatal("WWW Server: ", err)
+		}
+	}()
 
-    // SERWER API
-    srvAPI := &http.Server{
-        Addr:    adresWWW + ":" + portAPI,
-        Handler: apiHandler,
-    }
+	// SERWER API
+	srvAPI := &http.Server{
+		Addr:    adresWWW + ":" + portAPI,
+		Handler: apiHandler,
+	}
 
-    go func() {
-        log.Printf("🔌 API Server on https://%s:%s",adresWWW, portAPI)
-        if err := srvAPI.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && err != http.ErrServerClosed {
-            log.Fatal("API Server: ", err)
-        }
-    }()
+	go func() {
+		log.Printf("🔌 API Server on https://%s:%s", adresWWW, portAPI)
+		if err := srvAPI.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && err != http.ErrServerClosed {
+			log.Fatal("API Server: ", err)
+		}
+	}()
 
-    // GRACEFUL SHUTDOWN
-    quit := make(chan os.Signal, 1)
-    signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-    <-quit
-    log.Println("Shutting down servers...")
+	// GRACEFUL SHUTDOWN
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down servers...")
 
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-    if err := srvWWW.Shutdown(ctx); err != nil {
-        log.Printf("WWW Shutdown error: %v", err)
-    }
-    if err := srvAPI.Shutdown(ctx); err != nil {
-        log.Printf("API Shutdown error: %v", err)
-    }
+	if err := srvWWW.Shutdown(ctx); err != nil {
+		log.Printf("WWW Shutdown error: %v", err)
+	}
+	if err := srvAPI.Shutdown(ctx); err != nil {
+		log.Printf("API Shutdown error: %v", err)
+	}
 
-    log.Println("Servers stopped gracefully, YO! ;)")
+	log.Println("Servers stopped gracefully, YO! ;)")
 }

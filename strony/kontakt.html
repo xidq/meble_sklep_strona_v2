@@ -2,13 +2,86 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title data-i18n="nav_contact">Title</title>
-  <link rel="stylesheet" href="../css/header.css">
-  <link rel="stylesheet" href="../css/text.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="nav_contact">Kontakt</title>
+    <link rel="stylesheet" href="/css/header.css">
+    <link rel="stylesheet" href="/css/text.css">
+    <link rel="stylesheet" href="/css/kontakt.css">
 </head>
 <body>
+<div class="mini_body">
+    <div class="contact-wrapper">
 
+        <!-- Nagłówek -->
+        <div class="contact-header">
+            <h1 data-i18n="contact_title">📬 Skontaktuj się z nami</h1>
+            <p data-i18n="contact_sub">Jesteśmy tu, by Ci pomóc – napisz lub zadzwoń</p>
+        </div>
+
+        <!-- Główny układ: lewa kolumna (dane + formularz) i prawa (mapa + social) -->
+        <div class="contact-main">
+            <!-- LEWA KOLUMNA -->
+            <div class="left-col">
+                <!-- Karty z danymi -->
+
+
+                <!-- Formularz -->
+                <div class="form-section">
+                    <h2 data-i18n="contact_form_title">✍️ Napisz do nas</h2>
+                    <p class="sub" data-i18n="contact_form_sub">Odpowiemy szybko</p>
+                    <form action="#" method="post">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="name" data-i18n="form_name">Imię</label>
+                                <input type="text" id="name" placeholder="Jan" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email" data-i18n="form_email">E-mail</label>
+                                <input type="email" id="email" placeholder="jan@example.com" required>
+                            </div>
+                        </div>
+                        <div class="form-group full">
+                            <label for="message" data-i18n="form_message">Wiadomość</label>
+                            <textarea id="message" placeholder="Treść..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn-submit glow">
+                            <span>Wyślij</span>
+                            <span style="font-size:1rem;">➜</span>
+                        </button>
+                    </form>
+                    <div class="dane-kontaktowe">
+                        <span>Telefon</span>
+                        <a href="tel:+48123456789">+48 123 456 789</a>
+                        <span>E-mail</span>
+                        <a href="mailto:biuro@firma.pl">biuro@firma.pl</a>
+                        <span>Adres</span>
+                        <span class="value">ul. Przykładowa 1</span>
+                        <span class="value">00-00 Ciągodruty</span>
+                        <span>Godziny</span>
+                        <span class="value">Pon–Pt 8–16</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRAWA KOLUMNA -->
+            <div class="right-col">
+                <!-- Mapa -->
+                <div class="map-wrapper">
+                    <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2442.389433134327!2d21.0122282!3d52.2296756!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x471ecc669a869f01%3A0x72f0be2a88ea3b8!2sWarszawa!5e0!3m2!1spl!2spl!4v1700000000000"
+                            allowfullscreen=""
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Skrypty -->
+<script src="../js/auth_ui.js"></script>
+<script src="../js/lang.js"></script>
 </body>
-  <script src="../js/auth_ui.js"></script>
-  <script src="../js/lang.js"></script>
 </html>

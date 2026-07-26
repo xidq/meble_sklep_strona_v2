@@ -4,13 +4,15 @@
   /*--item-height: 256px;*/
   --item-height: 30vmin;
   --gap: 20px;
+  --main-brand-color: hsla(28, 100%, 50%, 1);
 }
 
-body{
-  height: 80vmin;
+/**/
+/*body{*/
+  /*height: 100%;*/
   /*width: 100vmin;*/
   /*overflow: hidden;*/
-}
+/*}*/
 /*body {*/
 /*    margin: 0;*/
 /*    padding: 40px 0;*/
@@ -21,10 +23,11 @@ body{
 
 /* Kontener galerii - odpowiada za przewijanie w poziomie */
 .gallery-container {
-  width: 100vw;
+  width: 100%;
   height: 100%;
   justify-items: center;
-  /*align-items: center;*/
+  /*justify-content: center;*/
+  align-content: center;
   overflow-x: auto;          /* Włącza pasek przewijania, gdy elementy wystają */
   overflow-y: hidden;        /* Zapobiega ewentualnemu skakaniu góra/dół */
   padding: 20px;
@@ -67,14 +70,17 @@ body{
   border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  /*box-shadow: 0 8px 24px rgba(0,0,0,0.3);*/
+  transition: transform 0.5s ease;
   background-color: #1e1e1e;
 }
-
+.gallery-item.glow {
+  /* Dodaj transition dla właściwości, które chcesz animować */
+  transition: transform 0.5s ease, --g-color 1s ease, box-shadow 1.5s ease;
+}
 .gallery-item:hover {
   transform: translateY(-5px);
-  box-shadow: 0 12px 30px rgba(255,255,255,0.1);
+  /*box-shadow: 0 12px 30px rgba(255,255,255,0.1);*/
 }
 
 /* Stylizacja obrazka */
@@ -84,16 +90,47 @@ body{
   object-fit: cover;
   display: block;
 }
-
-/* Podpis (np. nazwa folderu/pliku) */
 .gallery-item .overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(0,0,0,0.8));
   padding: 15px;
   color: #fff;
   font-size: 14px;
   font-weight: 500;
+
+  color: rgba(255,255,255,0.6);
+  background: rgba(0, 0, 0, 0.0);
+
+  backdrop-filter: blur(5px);
+
+  /* Gradient przechodzi od przezroczystości (0%) do pełnego krycia (np. 40%) */
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to top, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+  transition: color 0.5s ease, font-size 0.5s ease;
+}
+.gallery-item.glow:hover .overlay {
+  font-size: 1rem;
+  color: hsla(0, 0%, 100%, 0.8); /* Twój wybrany kolor */
+}
+
+@media screen and (orientation: portrait) {
+  .gallery-container{
+    margin-top: 2rem;
+  }
+  .gallery-grid {
+    /* Wymuszamy 2 kolumny o równej szerokości */
+    grid-template-columns: repeat(2, 1fr);
+
+    /* Resetujemy zachowanie automatyczne */
+    grid-auto-flow: row;
+
+    /* Resetujemy wymiary rzędów (teraz wysokość zależy od obrazka/karty) */
+    grid-template-rows: auto;
+
+    /* Szerokość całego grida na 100% */
+    width: 100%;
+    padding-right: 0;
+  }
 }

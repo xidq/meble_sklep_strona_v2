@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title data-i18n="nav_products">Title</title>
-    <link rel="stylesheet" href="../css/header.css">
-    <link rel="stylesheet" href="../css/gallery.css">
-    <link rel="stylesheet" href="../css/text.css">
+    <link rel="stylesheet" href="/css/header.css">
+    <link rel="stylesheet" href="/css/gallery.css">
+    <link rel="stylesheet" href="/css/text.css">
 </head>
 <body>
 <div class="gallery-container">
@@ -13,47 +13,6 @@
     </div>
 </div>
 
-<!--<script>-->
-<!--    const grid = document.getElementById('galleryGrid');-->
-
-
-<!--    function renderGallery(galleryData) {-->
-<!--        galleryData.forEach((item) => {-->
-<!--            const ajdi = item.id;-->
-<!--            const itemAnchor = document.createElement('a');-->
-<!--            itemAnchor.href = `item.html?id=${ajdi}`;-->
-<!--            itemAnchor.className = 'gallery-item';-->
-
-<!--            itemAnchor.innerHTML = `-->
-<!--            <img-->
-<!--                src="${item.path_256}"-->
-<!--                srcset="${item.path_256} 256w, ${item.path_512} 512w"-->
-<!--                sizes="(min-width: 2000px) 512px, 256px"-->
-<!--                alt="${item.desc}"-->
-<!--                loading="lazy"-->
-<!--            >-->
-<!--            <div class="overlay">${item.desc}</div>-->
-<!--        `;-->
-
-<!--            grid.appendChild(itemAnchor);-->
-<!--        });-->
-<!--    }-->
-
-<!--    fetch('../data/router.json')-->
-<!--        .then(response => {-->
-<!--            if (!response.ok) {-->
-<!--                throw new Error('Nie udało się pobrać pliku JSON: ' + response.statusText);-->
-<!--            }-->
-<!--            return response.json();-->
-<!--        })-->
-<!--        .then(data => {-->
-<!--            renderGallery(data);-->
-<!--        })-->
-<!--        .catch(error => {-->
-<!--            console.error('Błąd podczas ładowania galerii:', error);-->
-<!--            grid.innerHTML = `<p style="color: red; padding: 20px;">Błąd ładowania galerii. Spróbuj odświeżyć stronę.</p>`;-->
-<!--        });-->
-<!--</script>-->
 <script>
     const grid = document.getElementById('galleryGrid');
 
@@ -61,7 +20,7 @@
     function renderItem(id, name, imgData) {
         const itemAnchor = document.createElement('a');
         itemAnchor.href = `item.html?id=${id}`;
-        itemAnchor.className = 'gallery-item';
+        itemAnchor.className = 'gallery-item glow';
 
         // Wyciągamy rozdzielczości dla wariantu pierwszego (var_1)
         const p256 = imgData.var_1["256"];
@@ -85,7 +44,7 @@
     async function loadGallery() {
         try {
             // 1. Pobieramy główny router
-            const response = await fetch('../data/router.json');
+            const response = await fetch('/data/router.json');
             if (!response.ok) throw new Error('Błąd routera: ' + response.statusText);
             const routerData = await response.json();
 
@@ -126,6 +85,6 @@
     loadGallery();
 </script>
 </body>
-<script src="../js/auth_ui.js"></script>
-<script src="../js/lang.js"></script>
+<script src="/js/auth_ui.js"></script>
+<script src="/js/lang.js"></script>
 </html>

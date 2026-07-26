@@ -7,12 +7,12 @@ const headerHTML = `
     </a>
 
     <div>
-        <button class="header_btn" onclick="window.location.href = '../strony/produkty.html'" data-i18n="nav_products"> meble </button>
-        <button class="header_btn" onclick="window.location.href = '../strony/kontakt.html'" data-i18n="nav_contact"> meble </button>
+        <button class="header_btn glow" onclick="window.location.href = '/strony/produkty.html'" data-i18n="nav_products"> meble </button>
+        <button class="header_btn glow" onclick="window.location.href = '/strony/kontakt.html'" data-i18n="nav_contact"> meble </button>
     </div>
 
     <div class="nav-controls">
-        <button id="basketMenu" onclick="window.location.href = '../strony/koszyk.html'">
+        <button id="basketMenu" class="glow" onclick="window.location.href = '/strony/koszyk.html'">
             <span class="basket-icon">🛒</span>
             <!-- Licznik przedmiotów -->
             <span id="basketCount" class="basket-badge">0</span>
