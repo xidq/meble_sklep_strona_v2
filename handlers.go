@@ -103,7 +103,7 @@ func getUserOwnOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Dodane r.Method i nil dla custom payloadu
-	forwardToRust(w, r, r.Method, "/api/user/orders", true, nil)
+	forwardToRust(w, r, r.Method, "/user/self/orders", true, nil)
 }
 func userAccountOperations(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodPut && r.Method != http.MethodDelete {
@@ -128,7 +128,7 @@ func getUserOwnData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ogarnia żądanie do serwera Rust
-	baseURL := "https://" + config.RustHost + ":" + config.RustPort + "/usr/usr"
+	baseURL := "https://" + config.RustHost + ":" + config.RustPort + "/usr/self/data"
 	req, err := http.NewRequest(http.MethodGet, baseURL, nil)
 	if err != nil {
 		http.Error(w, "Failed to create request", http.StatusInternalServerError)
@@ -145,7 +145,12 @@ func getUserOwnData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Backend unavailable", http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
 
 	// Przekaż nagłówki i status odpowiedzi z Rusta
 	w.Header().Set("Content-Type", "application/json")
@@ -223,7 +228,10 @@ func getProductsProxyHandler(w http.ResponseWriter, r *http.Request) {
 			productCache.RUnlock()
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("X-Cache", "HIT")
-			w.Write(data)
+			if _, err := w.Write(data); err != nil {
+				log.Printf("Error w.Write isFresh getting products proxy handler: %v", err)
+				return
+			}
 			return
 		}
 		productCache.RUnlock()
@@ -263,7 +271,12 @@ func getProductsProxyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Backend unavailable", http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
 
 	// 4. Odczytanie całego body do pamięci (potrzebne, aby zapisać w cache)
 	respBody, err := io.ReadAll(resp.Body)
@@ -295,7 +308,11 @@ func getProductsProxyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	w.Write(respBody)
+	//w.Write(respBody)
+	if _, err := w.Write(respBody); err != nil {
+		log.Printf("Error w.Write getting products proxy handler: %v", err)
+		return
+	}
 }
 
 //func getProductsProxyHandler(w http.ResponseWriter, r *http.Request) {
@@ -396,7 +413,12 @@ func getProductByNameIdProxyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Backend unavailable", http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("Error closing response body: %v", err)
+		}
+	}(resp.Body)
 
 	// Kopiujemy nagłówki i ciało odpowiedzi do przeglądarki
 	for key, values := range resp.Header {
@@ -410,18 +432,50 @@ func getProductByNameIdProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func proxyProducts(w http.ResponseWriter, r *http.Request) {
-	// Zamienia np. /api/products/123 na /api/products/123 w locie[cite: 1]
-	path := strings.TrimPrefix(r.URL.Path, "/api/products")
-	forwardToRust(w, r, r.Method, "/api/products"+path, false, nil)
-}
+
+//	func proxyProducts(w http.ResponseWriter, r *http.Request) {
+//		// Zamienia np. /api/products/123 na /api/products/123 w locie[cite: 1]
+//		path := strings.TrimPrefix(r.URL.Path, "/api/products")
+//		forwardToRust(w, r, r.Method, "/api/products"+path, false, nil)
+//	}
+//
+//	func uploadFilesHandler(w http.ResponseWriter, r *http.Request) {
+//		if r.Method != http.MethodPost {
+//			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+//			return
+//		}
+//
+//		// Parsujemy formularz wieloczęściowy, żeby móc sprawdzić przesyłane pliki
+//		if err := r.ParseMultipartForm(800 << 20); err != nil {
+//			http.Error(w, "Failed to parse multipart form", http.StatusBadRequest)
+//			return
+//		}
+//
+//		if r.MultipartForm != nil && r.MultipartForm.File != nil {
+//			for _, files := range r.MultipartForm.File {
+//				for _, fileHeader := range files {
+//					ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+//					if !allowedExtensions[ext] {
+//						http.Error(w, fmt.Sprintf("Niedozwolone rozszerzenie pliku: %s", ext), http.StatusBadRequest)
+//						return
+//					}
+//				}
+//			}
+//		}
+//
+//		nameID := filepath.Base(r.URL.Path)
+//		forwardToRust(w, r, r.Method, "/api/images/upload/"+nameID, true, nil)
+//	}
 func uploadFilesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	nameID := filepath.Base(r.URL.Path) // Zamiast ręcznego Split, używamy Base (np. komoda_1)[cite: 1]
+	// USUŃ CAŁY BLOK Z r.ParseMultipartForm ORAZ WERYFIKACJĄ ROZSZERZEŃ!
+	// Pozwala to zostawić r.Body nienaruszone jako aktywny strumień.
+
+	nameID := filepath.Base(r.URL.Path)
 	forwardToRust(w, r, r.Method, "/api/images/upload/"+nameID, true, nil)
 }
 
@@ -683,7 +737,10 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// 4. Rust -> Klient
 	go func() {
 		for {
-			backendConn.SetReadDeadline(time.Now().Add(timeout))
+			if err := backendConn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+				log.Printf("Failed to set read deadline: %v", err)
+				return
+			}
 			msgType, msg, err := backendConn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -692,7 +749,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 				errChan <- err
 				return
 			}
-			clientConn.SetWriteDeadline(time.Now().Add(siteTimeout))
+
+			if err := clientConn.SetWriteDeadline(time.Now().Add(siteTimeout)); err != nil {
+				log.Printf("Failed to set write deadline: %v", err)
+				return
+			}
 			if err := clientConn.WriteMessage(msgType, msg); err != nil {
 				errChan <- err
 				return
@@ -703,7 +764,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// 5. Klient -> Rust
 	go func() {
 		for {
-			clientConn.SetReadDeadline(time.Now().Add(timeout))
+
+			if err := clientConn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+				log.Printf("Failed to set read deadline: %v", err)
+				return
+			}
 			msgType, msg, err := clientConn.ReadMessage()
 			if err != nil {
 				errChan <- err
@@ -719,7 +784,10 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			backendConn.SetWriteDeadline(time.Now().Add(siteTimeout))
+			if err := backendConn.SetWriteDeadline(time.Now().Add(siteTimeout)); err != nil {
+				log.Printf("Failed to set write deadline: %v", err)
+				return
+			}
 			if err := backendConn.WriteMessage(msgType, msg); err != nil {
 				errChan <- err
 				return
@@ -732,28 +800,28 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 // Pomocnicze - fixPaths
-func fixPaths(obj map[string]interface{}, nameID, typ string) {
-
-	for key, val := range obj {
-		switch v := val.(type) {
-		case string:
-			if strings.Contains(v, "src/api/products/") {
-				// Zamiana: src/api/products/{nameId}/(images|models)/ -> ../data/products/{nameId}/{typ}/
-				obj[key] = strings.Replace(v, "src/api/products/", "../data/products/", 1)
-				obj[key] = strings.Replace(obj[key].(string), "/images/", "/"+typ+"/", 1)
-				obj[key] = strings.Replace(obj[key].(string), "/models/", "/"+typ+"/", 1)
-			}
-		case map[string]interface{}:
-			fixPaths(v, nameID, typ)
-		case []interface{}:
-			for _, item := range v {
-				if m, ok := item.(map[string]interface{}); ok {
-					fixPaths(m, nameID, typ)
-				}
-			}
-		}
-	}
-}
+//func fixPaths(obj map[string]any, nameID, typ string) {
+//
+//	for key, val := range obj {
+//		switch v := val.(type) {
+//		case string:
+//			if strings.Contains(v, "src/api/products/") {
+//				// Zamiana: src/api/products/{nameId}/(images|models)/ -> ../data/products/{nameId}/{typ}/
+//				obj[key] = strings.Replace(v, "src/api/products/", "../data/products/", 1)
+//				obj[key] = strings.Replace(obj[key].(string), "/images/", "/"+typ+"/", 1)
+//				obj[key] = strings.Replace(obj[key].(string), "/models/", "/"+typ+"/", 1)
+//			}
+//		case map[string]any:
+//			fixPaths(v, nameID, typ)
+//		case []any:
+//			for _, item := range v {
+//				if m, ok := item.(map[string]any); ok {
+//					fixPaths(m, nameID, typ)
+//				}
+//			}
+//		}
+//	}
+//}
 
 // // verifyJWT – weryfikuje podpis i czas ważności
 //
@@ -764,7 +832,7 @@ func fixPaths(obj map[string]interface{}, nameID, typ string) {
 //			return verifyJWTInsecure(tokenString)
 //		}
 //
-//		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(t *jwt.Token) (interface{}, error) {
+//		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(t *jwt.Token) (any, error) {
 //			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 //				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 //			}
@@ -883,7 +951,12 @@ func forwardToRust(w http.ResponseWriter, r *http.Request, method string, target
 		http.Error(w, "Backend unavailable", http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("Error closing body: %v", err)
+		}
+	}(resp.Body)
 
 	// Kopiowanie nagłówków odpowiedzi
 	for k, vv := range resp.Header {
@@ -906,7 +979,7 @@ func verifyJWT(tokenString string) (*JWTClaims, error) {
 		return nil, fmt.Errorf("błąd serwera: JWT_SECRET_KEY nie jest skonfigurowany")
 	}
 
-	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("nieoczekiwana metoda szyfrowania: %v", t.Header["alg"])
 		}
@@ -956,17 +1029,16 @@ func getJWTFromCookie(r *http.Request) string {
 func getJWTFromHeader(r *http.Request) string {
 
 	auth := r.Header.Get("Authorization")
-	if strings.HasPrefix(auth, "Bearer ") {
-		return strings.TrimPrefix(auth, "Bearer ")
+	if after, ok := strings.CutPrefix(auth, "Bearer "); ok {
+		return after
 	}
 	return ""
 }
 
 // Middleware do sprawdzania autoryzacji
-func authMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
-
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func authMiddleware(allowedRoles ...string) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
 
 			log.Printf("[Middleware] Path: %s, Roles: %v", r.URL.Path, allowedRoles)
 
@@ -974,7 +1046,7 @@ func authMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
 			token := extractAuthToken(r)
 
 			if token == "" {
-				LogSecurity("API_ACCESS_DENIED", map[string]interface{}{
+				LogSecurity("API_ACCESS_DENIED", map[string]any{
 					"path":   r.URL.Path,
 					"ip":     r.RemoteAddr,
 					"reason": "no_token",
@@ -1001,7 +1073,7 @@ func authMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
 					}
 				}
 				if !roleOk {
-					LogSecurity("API_ACCESS_DENIED", map[string]interface{}{
+					LogSecurity("API_ACCESS_DENIED", map[string]any{
 						"path":           r.URL.Path,
 						"ip":             r.RemoteAddr,
 						"user_role":      claims.Role,
@@ -1013,8 +1085,8 @@ func authMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
 				}
 			}
 			log.Printf("[Middleware] Access granted for %s", r.URL.Path)
-			next.ServeHTTP(w, r)
-		})
+			next(w, r)
+		}
 	}
 }
 
@@ -1024,7 +1096,7 @@ func checkUserRole(r *http.Request, allowedRoles ...string) bool {
 	token := getJWTFromCookie(r)
 	log.Printf("checkUserRole/token: %s", token)
 	if token == "" {
-		LogSecurity("ACCESS_DENIED", map[string]interface{}{
+		LogSecurity("ACCESS_DENIED", map[string]any{
 			"path":           r.URL.Path,
 			"ip":             r.RemoteAddr,
 			"required_roles": allowedRoles,
@@ -1034,11 +1106,11 @@ func checkUserRole(r *http.Request, allowedRoles ...string) bool {
 	}
 
 	claims, err := verifyJWT(token)
-	log.Printf("checkUserRole/claims: %s", claims)
+	log.Printf("checkUserRole/claims: %v", claims)
 	log.Printf("checkUserRole/claims_err: %s", err)
 
 	if err != nil {
-		LogSecurity("ACCESS_DENIED", map[string]interface{}{
+		LogSecurity("ACCESS_DENIED", map[string]any{
 			"path":           r.URL.Path,
 			"ip":             r.RemoteAddr,
 			"required_roles": allowedRoles,
@@ -1053,7 +1125,7 @@ func checkUserRole(r *http.Request, allowedRoles ...string) bool {
 		}
 	}
 
-	LogSecurity("ACCESS_DENIED", map[string]interface{}{
+	LogSecurity("ACCESS_DENIED", map[string]any{
 		"path":           r.URL.Path,
 		"ip":             r.RemoteAddr,
 		"required_roles": allowedRoles,
@@ -1072,11 +1144,15 @@ func serveErrorPage(w http.ResponseWriter, r *http.Request, statusCode int, titl
 	if r.Header.Get("X-Requested-With") == "XMLHttpRequest" ||
 		strings.Contains(r.Header.Get("Accept"), "application/json") {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"error":   true,
 			"status":  statusCode,
 			"message": message,
-		})
+		}); err != nil {
+			log.Printf("Error encoding JSON: %v", err)
+			return
+		}
 		return
 	}
 
@@ -1090,7 +1166,11 @@ func serveErrorPage(w http.ResponseWriter, r *http.Request, statusCode int, titl
 			html = strings.ReplaceAll(html, "{{title}}", title)
 			html = strings.ReplaceAll(html, "{{message}}", message)
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write([]byte(html))
+
+			if _, err2 := w.Write([]byte(html)); err2 != nil {
+				log.Printf("[Middleware] Error writing error page: %v", err2)
+				return
+			}
 			return
 		}
 	}
@@ -1132,16 +1212,29 @@ func loginProxyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Backend error", http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("[Middleware] Error closing body: %v", err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+		_, err := io.Copy(w, resp.Body)
+		if err != nil {
+			log.Printf("[Middleware] Error copying response body: %v", err)
+			return
+		}
 		return
 	}
 
-	var responseData map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&responseData)
+	var responseData map[string]any
+
+	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+		log.Printf("Error decoding JSON: %v", err)
+		return
+	}
 
 	if token, ok := responseData["token"].(string); ok {
 		http.SetCookie(w, &http.Cookie{
@@ -1152,7 +1245,10 @@ func loginProxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(responseData)
+
+	if err := json.NewEncoder(w).Encode(responseData); err != nil {
+		return
+	}
 }
 
 // ratelimit auth
@@ -1242,11 +1338,15 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1, // Natychmiastowe usunięcie przez przeglądarkę
 	})
-	LogSecurity("LOGOUT", map[string]interface{}{
+	LogSecurity("LOGOUT", map[string]any{
 		"ip": r.RemoteAddr,
 	})
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"message":"Wylogowano pomyślnie"}`))
+
+	if _, err := w.Write([]byte(`{"message":"Wylogowano pomyślnie"}`)); err != nil {
+		log.Printf("Error copying response body: %v", err)
+		return
+	}
 }
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
@@ -1262,8 +1362,11 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"username": claims.Username,
 		"role":     claims.Role,
-	})
+	}); err != nil {
+		log.Printf("Error encoding JSON: %v", err)
+		return
+	}
 }

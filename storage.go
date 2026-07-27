@@ -1,14 +1,16 @@
 package main
+
 import (
-    "regexp"
-    "path/filepath"
-    "os"
-    "io"
-    "strings"
-    "log"
-    "net/http"
-    "fmt"
-    "encoding/json"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 type RouterItem struct {
@@ -21,10 +23,9 @@ type RouterItem struct {
 // rebuildRouterJson skanuje katalogi i tworzy centralny plik mapowania map.json / router.json
 func rebuildRouterJson() {
 	dataDir := filepath.Join(config.DataDir, "products")
-    routerFilePath := filepath.Join(config.DataDir, "router.json")
+	routerFilePath := filepath.Join(config.DataDir, "router.json")
 
-    // W syncProductData oraz rustFilesUploadHandler / rustJsonUploadHandler:
-
+	// W syncProductData oraz rustFilesUploadHandler / rustJsonUploadHandler:
 
 	files, err := os.ReadDir(dataDir)
 	if err != nil {
@@ -45,7 +46,7 @@ func rebuildRouterJson() {
 		imgPath := filepath.Join(dataDir, nameID, "img", "dane.json")
 		modelPath := filepath.Join(dataDir, nameID, "model", "model.json")
 
-        if _, err := os.Stat(productPath); err == nil {
+		if _, err := os.Stat(productPath); err == nil {
 			p := fmt.Sprintf("data/products/%s/product.json", nameID)
 			item.Product = &p
 		}
@@ -62,7 +63,11 @@ func rebuildRouterJson() {
 	}
 
 	// Zapewniamy istnienie katalogu docelowego i zapisujemy plik indented JSON
-	os.MkdirAll(filepath.Dir(routerFilePath), 0755)
+
+	if err := os.MkdirAll(filepath.Dir(routerFilePath), 0755); err != nil {
+		log.Printf("[Router] Brak katalogu danych: %v", err)
+		return
+	}
 	output, err := json.MarshalIndent(routerList, "", "  ")
 	if err != nil {
 		log.Printf("[Router] Błąd zapisu struktur JSON: %v", err)
@@ -72,7 +77,7 @@ func rebuildRouterJson() {
 	if err := os.WriteFile(routerFilePath, output, 0644); err != nil {
 		log.Printf("[Router] Nie udało się zapisać router.json: %v", err)
 	} else {
-		log.Printf("✨ [Router] Zaktualizowano pomyślnie plik router.json")
+		log.Printf("[Router] Zaktualizowano pomyślnie plik router.json")
 	}
 }
 func syncProductData(nameID string) {
@@ -84,7 +89,12 @@ func syncProductData(nameID string) {
 		log.Printf("[Sync ERROR] Brak komunikacji z Rustem dla %s: %v", nameID, err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("error closing body: %v", err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[Sync ERROR] Rust zwrócił status %d dla produktu %s", resp.StatusCode, nameID)
@@ -120,7 +130,6 @@ func syncProductData(nameID string) {
 	log.Printf("[Sync] Dane dla produktu '%s' zostały zsynchronizowane z sukcesem.", nameID)
 }
 
-
 var pathRegex = regexp.MustCompile(`src/api/+/products/[^/]+/(images|models)/`)
 
 // fixPathsAndClean czyści product_id i mapuje ścieżki plików w głąb całego JSON-a
@@ -153,33 +162,46 @@ func fixPathsAndClean(data interface{}, modyfikator, typ string) interface{} {
 		return data
 	}
 }
+
 // 3. Zmiana: Przejście z "." na dynamiczny config.DataDir przy zapisie obrazków
 func rustFilesUploadHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("odbieranie pliku")
+	log.Printf("[Go Server] Odbieranie żądania uploadu: %s %s", r.Method, r.URL.Path)
+	log.Printf("[Go Server] Content-Type: %s, Content-Length: %d", r.Header.Get("Content-Type"), r.ContentLength)
 	if r.Method != http.MethodPost {
+		log.Printf("err http.MethodPost")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 3 {
-		http.Error(w, "Brak parametru modyfikatora", http.StatusBadRequest)
-		return
-	}
-	modyfikator := parts[len(parts)-1]
+	//parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	//if len(parts) < 3 {
+	//
+	//	log.Printf("err http.MethodPost")
+	//	http.Error(w, "Brak parametru modyfikatora", http.StatusBadRequest)
+	//	return
+	//}
+	//modyfikator := parts[len(parts)-1]
+	modyfikator := strings.TrimPrefix(r.URL.Path, "/api/produkty/")
+	modyfikator = strings.Trim(modyfikator, "/") // usuwamy ewentualne slashe
 
-	if err := r.ParseMultipartForm(50 << 20); err != nil {
+	if err := r.ParseMultipartForm(500 << 20); err != nil {
+
+		log.Printf("err r.ParseMultipartForm %v", err)
 		http.Error(w, "Błąd parsowania plików multipart", http.StatusBadRequest)
 		return
 	}
 
 	files := r.MultipartForm.File["files"]
 	if len(files) == 0 {
+		log.Printf("err len(files) == 0")
 		http.Error(w, "Brak plików w żądaniu", http.StatusBadRequest)
 		return
 	}
 
 	targetDir := filepath.Join(config.DataDir, "products", modyfikator, "img")
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		log.Printf("err filepath.Join config.DataDir: %v", err)
 		http.Error(w, "Błąd tworzenia katalogu zapisu", http.StatusInternalServerError)
 		return
 	}
@@ -190,14 +212,24 @@ func rustFilesUploadHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer file.Close()
+		defer func(file multipart.File) {
+			err := file.Close()
+			if err != nil {
+				log.Printf("UploadHandler error %v", err)
+			}
+		}(file)
 
 		out, err := os.Create(filepath.Join(targetDir, fileHeader.Filename))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer out.Close()
+		defer func(out *os.File) {
+			err := out.Close()
+			if err != nil {
+				log.Printf("UploadHandler error %v", err)
+			}
+		}(out)
 
 		if _, err = io.Copy(out, file); err != nil {
 			http.Error(w, "Błąd podczas zapisu strumienia pliku", http.StatusInternalServerError)
@@ -211,8 +243,12 @@ func rustFilesUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"success"}`))
+
+	if _, err := w.Write([]byte(`{"status":"success"}`)); err != nil {
+		return
+	}
 }
+
 // 4. Zmiana: Poprawa nameID -> modyfikator, ujednolicenie nazw folderów (images -> img itd.) i config.DataDir
 func rustJsonUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -230,9 +266,10 @@ func rustJsonUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Mapowanie typów folderów z Rusta na strukturę Go
 	folderType := typ
-	if folderType == "images" || folderType == "img" {
+	switch folderType {
+	case "images", "img":
 		folderType = "img"
-	} else if folderType == "models" || folderType == "model" {
+	case "models", "model":
 		folderType = "model"
 	}
 
@@ -273,5 +310,8 @@ func rustJsonUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"success"}`))
+	if _, err := w.Write([]byte(`{"status":"success"}`)); err != nil {
+		log.Printf("Write error: %v", err)
+		return
+	}
 }

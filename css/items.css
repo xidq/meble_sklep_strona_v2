@@ -11,34 +11,32 @@
 }
 /* Karta pojedynczego produktu */
 .product-card {
-  /*background: rgba(255,255,255, 0.1);*/
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   margin-bottom: 40px;
   padding: 20px;
-  display: table;
+  display: flex; /* Zmieniono z table na flex */
+  gap: 30px;     /* Odstęp między kolumnami zamiast padding-right */
   width: 100%;
+  box-sizing: border-box;
 }
 /* Układ dwukolumnowy za pomocą display: table-cell */
 .left-column {
-  display: table-cell;
-  width: 55%;
-  vertical-align: top;
-  padding-right: 30px;
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  max-width: 70vh; /* Kluczowe: zapobiega rozciąganiu w nieskończoność na szerokość */
+  flex-shrink: 0;   /* Nie pozwala kolumnie się kurczyć na siłę */
 }
 .right-column {
-  display: table-cell;
-  width: 45%;
-  vertical-align: top;
-  /*background: #fafafa;*/
-  /*background: rgba(255, 255, 255, 0.05);*/
+  flex: 1;          /* Prawa kolumna zajmuje resztę miejsca */
   padding: 20px;
   border-radius: 6px;
 }
 /* Główny kontener dużego zdjęcia */
 .main-image-container {
   width: 100%;
-  height: auto;
+  max-height: 75vh;
   aspect-ratio: 1 / 1;
   background: rgba(255, 255, 255, 0.7);
   border-radius: 6px;
@@ -47,12 +45,12 @@
   pointer-events: none;
   user-select: none;
 }
-.main-image-container img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-}
+/*.main-image-container img {*/
+/*  max-width: 100%;*/
+/*  height: auto;*/
+/*  display: block;*/
+/*  margin: 0 auto;*/
+/*}*/
 /* Miniaturki pod dużym zdjęciem */
 .thumbnails-container {
   margin-top: 15px;
@@ -111,9 +109,13 @@
   font-weight: bold;
   /*color: #111;*/
 }
-
+.main_image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Dopasowuje obrazek idealnie wewnątrz kontenera zachowując proporcje */
+}
 /* RWD dla mniejszych ekranów - układ przechodzi w pionowy */
-@media (max-width: 768px) {
+@media screen and (orientation: portrait) {
   .product-card, .left-column, .right-column {
     display: block;
     width: 100%;
@@ -121,5 +123,12 @@
   .left-column {
     padding-right: 0;
     margin-bottom: 20px;
+  }
+  .container{
+    height: max-content;
+  }
+  .product-card{
+    height: max-content;
+    overflow-y: auto;
   }
 }

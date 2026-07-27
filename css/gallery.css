@@ -23,7 +23,7 @@
 
 /* Kontener galerii - odpowiada za przewijanie w poziomie */
 .gallery-container {
-  width: 100%;
+  width: max-content;
   height: 100%;
   justify-items: center;
   /*justify-content: center;*/
@@ -49,7 +49,6 @@
 
 /* Siatka galerii - klucz do dwóch rzędów o zmiennej szerokości */
 .gallery-grid {
-
   display: grid;
   /* Dwa rzędy o stałej wysokości */
   grid-template-rows: repeat(2, var(--item-height));
@@ -61,6 +60,8 @@
   /* Szerokość dostosuje się do zawartości, pozwalając na scroll */
   width: max-content;
   padding-right: 40px; /* Margines na końcu listy */
+  padding-top: 40px;
+  padding-bottom: 40px;
 }
 
 /* Karta elementu (link) */
@@ -103,7 +104,7 @@
   color: rgba(255,255,255,0.6);
   background: rgba(0, 0, 0, 0.0);
 
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(2px);
 
   /* Gradient przechodzi od przezroczystości (0%) do pełnego krycia (np. 40%) */
   -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
@@ -115,9 +116,12 @@
   color: hsla(0, 0%, 100%, 0.8); /* Twój wybrany kolor */
 }
 
+
 @media screen and (orientation: portrait) {
   .gallery-container{
     margin-top: 2rem;
+    width: 100%;
+    height: max-content;
   }
   .gallery-grid {
     /* Wymuszamy 2 kolumny o równej szerokości */

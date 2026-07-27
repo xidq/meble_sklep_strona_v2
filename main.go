@@ -137,7 +137,10 @@ func main() {
 	wwwMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
+
+		if _, err := w.Write([]byte(`{"status":"ok"}`)); err != nil {
+			return
+		}
 	})
 
 	// ROUTING STRON (z autoryzacją)
@@ -147,7 +150,7 @@ func main() {
 	apiMux := http.NewServeMux()
 
 	// Endpointy dla Panelu Admina (Frontend -> Go proxy do Rusta)
-	apiMux.HandleFunc("/api/admin/produkty/", uploadFilesHandler)
+	apiMux.HandleFunc("/api/admin/produkty/", authMiddleware("Admin")(uploadFilesHandler))
 	// Zapewne masz coś w tym stylu (mux, chi, lub standardowy http.ServeMux):
 	apiMux.HandleFunc("/api/products", getProductsProxyHandler)  // <-- Dla POST/GET
 	apiMux.HandleFunc("/api/products/", getProductsProxyHandler) // <-- Dla PUT/DELETE z ID
@@ -156,23 +159,23 @@ func main() {
 	apiMux.HandleFunc("/api/upload/json/", rustJsonUploadHandler)
 	apiMux.HandleFunc("/api/products/by-name/", getProductByNameIdProxyHandler)
 	// Endpoint bazowy do pobierania listy i tworzenia użytkownika (POST / GET)
-	apiMux.HandleFunc("/api/admin/usr", adminUsersProxyHandler)
+	apiMux.HandleFunc("/api/admin/usr", authMiddleware("Admin")(adminUsersProxyHandler))
 
 	// Endpoint z parametrem do pobierania pojedynczego i edycji (GET / PUT / DELETE)
-	apiMux.HandleFunc("/api/admin/usr/", adminUsersProxyHandler)
-	apiMux.HandleFunc("/api/admin/check_response/", adminResponseCheckProxyHandler)
+	apiMux.HandleFunc("/api/admin/usr/", authMiddleware("Admin")(adminUsersProxyHandler))
+	apiMux.HandleFunc("/api/admin/check_response/", authMiddleware("Admin")(adminResponseCheckProxyHandler))
 
 	apiMux.HandleFunc("/api/login", loginProxyHandler)
-	apiMux.HandleFunc("/api/usr/data", getUserOwnData)
+	apiMux.HandleFunc("/api/usr/self/data", authMiddleware("Admin", "User", "Legituser")(getUserOwnData))
 	apiMux.HandleFunc("/api/usr/account", userAccountOperations)
 	apiMux.HandleFunc("/api/usr/account/", userAccountOperations)
-	apiMux.HandleFunc("/api/usr/orders", getUserOwnOrders)
+	apiMux.HandleFunc("/api/usr/self/orders", getUserOwnOrders)
 	apiMux.HandleFunc("/api/usr/actions/order", putNewUserOrder)
 	apiMux.HandleFunc("/api/getproducts", getProductsProxyHandler)
 	apiMux.HandleFunc("/api/getproducts/", getProductsProxyHandler)
 	apiMux.HandleFunc("/api/register", registerProxyHandler)
 	apiMux.HandleFunc("/api/logout", logoutHandler)
-	apiMux.HandleFunc("/api/me", meHandler)
+	apiMux.HandleFunc("/api/me", authMiddleware("Admin", "User", "Legituser")(meHandler))
 
 	// CORS dla API
 	corsHandler := func(h http.Handler) http.Handler {
@@ -191,7 +194,8 @@ func main() {
 	}
 
 	// API z CORS + Rate Limit
-	apiHandler := rateLimitMiddleware(corsHandler(apiMux))
+	//apiHandler := rateLimitMiddleware(corsHandler(apiMux))
+	apiHandler := rateLimitMiddleware(authRateLimitMiddleware(corsHandler(apiMux)))
 
 	portWWW := config.PortWWW
 	portAPI := config.PortAPI

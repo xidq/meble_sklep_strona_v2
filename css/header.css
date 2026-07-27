@@ -68,6 +68,10 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   justify-items: center;
   align-content: center;
 }
+#authBtn{
+  background-color: rgba(255, 255, 255, 0.8);
+  color: black;
+}
 .dropdown-btn {
   background: transparent;
   color: hsla(204, 0%, 100%, 0.7);
@@ -159,10 +163,10 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   to { --a: 1turn }
 }
 
-.admin-link-btn {
+.user-backdrop-menu-button {
   display: block;
   text-align: center;
-  background: #28a745;
+  background: rgba(50,50,50,1.0);
   color: white;
   padding: 10px;
   margin-top: 10px;
@@ -170,6 +174,10 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   border-radius: 4px;
   font-weight: bold;
   font-size: 14px;
+}
+.user-backdrop-menu-button:hover {
+
+  box-shadow: 0 0 1rem rgba(255,255,255,0.25);
 }
 
 
@@ -183,7 +191,7 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
 #basketMenu {
   position: relative;
   padding: 10px 15px;
-  background-color: #2d3748; /* Przykładowy ciemny kolor */
+  background-color: #2d3748;
   border: none;
   border-radius: 8px;
   cursor: pointer;

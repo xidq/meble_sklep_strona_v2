@@ -3,134 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Panel Administratora - Produkty</title>
-    <style>
-        #adminPanel {
-            /*display: none;*/
-        }
-        .modified-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background-color: #28a745;
-            border-radius: 50%;
-            margin-left: 6px;
-            vertical-align: middle;
-        }
-        /*body { font-family: sans-serif; margin: 30px; background: pink; }*/
-        body {
-            font-family: sans-serif;
-            margin: 30px;
-            background: #ffb6c1; /* Ciemniejszy róż jako baza pod kształty */
-            position: relative;
-            overflow-x: hidden;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        /* Kontener dla ostrych, geometrycznych kształtów w tle */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            pointer-events: none;
-
-            /* Zestaw ostrych, wielokątnych kształtów (różne odcienie różu, fuksji i magenta) */
-            background:
-                /* Trójkąt 1 */
-                    linear-gradient(135deg, #ff1493, #ff1493),
-                        /* Romby / wielokąty zdefiniowane ostrymi plamami kolorów */
-                    linear-gradient(220deg, #c71585 0%, #c71585 100%),
-                    linear-gradient(45deg, #ff69b4 0%, #ff69b4 100%),
-                    linear-gradient(300deg, #db7093 0%, #db7093 100%),
-                    linear-gradient(90deg, #ff66b2 0%, #ff66b2 100%);
-
-            /* Nadajemy im geometryczne maski z ostrymi krawędziami (wielokąty / clip-path) */
-            clip-path: polygon(
-                    10% 0%, 60% 15%, 100% 0%,
-                    85% 40%, 100% 70%, 50% 100%,
-                    20% 80%, 0% 50%, 30% 25%
-            );
-
-            /* Delikatny blur, który zachowuje ostre załamania kształtów, ale daje efekt nowoczesnego szkła/blur-u */
-            filter: blur(15px);
-            opacity: 0.65;
-        }
-
-        /* Dodatkowa druga warstwa dla głębi i jeszcze bardziej poszarpanych, ostrych form */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -2;
-            pointer-events: none;
-            background: linear-gradient(60deg, #ff007f, #ffb6c1, #8b0042);
-            clip-path: polygon(
-                    0% 20%, 40% 0%, 100% 30%,
-                    90% 80%, 60% 100%, 10% 90%
-            );
-            filter: blur(25px);
-            opacity: 0.5;
-        }
-        header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .nav-controls { display: flex; gap: 15px; align-items: center; }
-
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        .form-group { margin-bottom: 10px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input, textarea { padding: 8px; font-size: 14px; width: 100%; max-width: 400px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; outline: none; }
-
-
-        .admin-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            height: calc(100vh - 180px); /* Dopasowuje wysokość do ekranu minus nagłówek i zakładki */
-            box-sizing: border-box;
-        }
-        .products-list-panel {
-            flex: 1;
-            background: rgba(255,255,255,0.5);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto; /* Włącza niezależny scroll pionowy */
-        }
-        .form-panel {
-            flex: 1.5;
-            background: rgba(255,255,255,0.5);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-top: 2px solid #007bff;
-            overflow-y: auto; /* Włącza niezależny scroll pionowy */
-        }
-        .product-item { padding: 10px; border: 1px solid #ddd; margin-bottom: 8px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
-        .product-item:hover { background: #f0f4f8; }
-        .product-item.selected { background: #d1ecf1; border-color: #bee5eb; }
-
-        .back-btn { background: #6c757d; text-decoration: none; color: white; padding: 10px 15px; border-radius: 4px; font-size: 14px; font-weight: bold; }
-        .back-btn:hover { background: #5a6268; }
-        /* --- NOWE STYLE DLA SYSTEMU ZAKŁADEK --- */
-        .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-        .tab-btn { background: #e2e8f0; color: #4a5568; padding: 12px 24px; border: none; border-radius: 5px; font-weight: bold; font-size: 15px; cursor: pointer; transition: all 0.2s ease; }
-        .tab-btn:hover { background: #cbd5e1; color: #1a202c; }
-        .tab-btn.active { background: #007bff; color: white; box-shadow: 0 2px 4px rgba(0,123,255,0.3); }
-
-        /* Ukrywanie sekcji menu */
-        .tab-section { display: none; }
-        .tab-section.active { display: block; }
-    </style>
+    <link rel="stylesheet" href="/css/admin_panel.css">
 </head>
 <body>
 
@@ -387,8 +260,10 @@
     </div>
 </div>
 
-<script src="../js/lang.js"></script>
-<script src="../js/admin_panel.js"></script>
-<script src="../js/admin_panel_image_upload.js"></script>
+<script src="/js/lang.js"></script>
+<script src="/js/admin_panel.js"></script>
+<script src="/js/admin_panel_userlist.js"></script>
+<script src="/js/admin_panel_image_upload.js"></script>
+
 </body>
 </html>

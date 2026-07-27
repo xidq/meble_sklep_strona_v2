@@ -44,7 +44,7 @@ async function fetchAndParse(url) {
 // NAPRAWIONE: Dashboard teraz wyświetla 'name' zgodnie ze strukturą w Ruście
 async function loadDashboard() {
     try {
-        const user = await fetchAndParse('/api/usr/data');
+        const user = await fetchAndParse('/api/usr/self/data');
         document.getElementById('content').innerHTML = `
             <h1>Witaj, ${user.username || 'Użytkowniku'}</h1>
             <p>Email: ${user.email || 'Nie podano'}</p>
@@ -58,7 +58,7 @@ async function loadDashboard() {
 
 async function loadOrders() {
     try {
-        const orders = await fetchAndParse('/api/usr/orders');
+        const orders = await fetchAndParse('/api/usr/self/orders');
         if (orders.length === 0) {
             document.getElementById('content').innerHTML = `<h1>Twoje zamówienia</h1><p>Brak zamówień.</p>`;
             return;
@@ -81,7 +81,7 @@ async function loadOrders() {
 // NAPRAWIONE: Formularz ustawień w całości tutaj
 async function loadSettings() {
     try {
-        const user = await fetchAndParse('/api/usr/data');
+        const user = await fetchAndParse('/api/usr/self/data');
 
         document.getElementById('content').innerHTML = `
             <h1>Ustawienia konta</h1>

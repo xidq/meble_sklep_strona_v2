@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	//     "log"
 	"os"
 	"strconv"
@@ -49,7 +50,7 @@ type Config struct {
 // LoadConfig wczytuje konfigurację z .env i zmiennych środowiskowych
 func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
-		//         log.Println("Brak pliku .env – używam zmiennych środowiskowych")
+		log.Println("Brak pliku .env – używam zmiennych środowiskowych")
 	}
 	cfg := &Config{
 		AdresWWW:              getEnv("ADRES_WWW", ":"),

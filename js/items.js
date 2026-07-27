@@ -6,11 +6,11 @@
 function createMainImageHTML(imgObject) {
   if (!imgObject) return '';
   return `
-        <picture>
+        <picture class="main_image">
             <source media="(min-width: 2048px)" srcset="${imgObject["2048"] || ''}">
             <source media="(min-width: 1024px)" srcset="${imgObject["1024"] || ''}">
             <source media="(min-width: 512px)" srcset="${imgObject["512"] || ''}">
-            <img src="${imgObject["512"] || imgObject["1024"] || ''}" alt="Zdjęcie produktu" />
+            <img src="${imgObject["512"] || imgObject["1024"] || imgObject["2048"] || ''}" alt="Zdjęcie produktu" />
         </picture>
     `;
 }
@@ -173,9 +173,9 @@ function renderSingleProduct(fullData, index, container) {
 // 3. GŁÓWNA INICJALIZACJA GALERII (POPRAWIONA)
 // ==========================================
 async function initGallery() {
-  console.log('🚀 initGallery START'); // <-- DODAJ
+  console.log('🚀 initGallery START');
   const container = document.getElementById('products-gallery');
-  console.log('🚀 container:', container); // <-- DODAJ
+  console.log('🚀 container:', container);
   if (!container) return;
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -184,18 +184,18 @@ async function initGallery() {
   try {
     // Krok A: Pobieramy główny router.json
     const responseRouter = await fetch('data/router.json');
-    console.log('🚀 router.json status:', responseRouter.status); // <-- DODAJ
+    console.log('🚀 router.json status:', responseRouter.status);
     if (!responseRouter.ok) {
       throw new Error(`Nie udało się załadować router.json: ${responseRouter.status}`);
     }
     const routerData = await responseRouter.json();
-    console.log('🚀 router.json status:', responseRouter.status); // <-- DODAJ
+    console.log('🚀 router.json status:', responseRouter.status);
 
     // Funkcja pomocnicza, która pobiera plik produktu i obrazków dla jednego elementu z routera
     async function fetchAndCombineProduct(item) {
-      console.log('🚀 fetchAndCombineProduct for:', item.id); // <-- DODAJ
+      console.log('🚀 fetchAndCombineProduct for:', item.id);
       const [resProduct, resImg] = await Promise.all([
-        fetch(item.product),
+        fetch(`/api/products/by-name/${item.id}`),
         fetch(item.img)
       ]);
 
@@ -219,18 +219,18 @@ async function initGallery() {
       const targetItem = routerData.find(item => item.id === productIdParam);
 
       if (targetItem) {
-        console.log('🚀 targetItem found:', targetItem); // <-- DODAJ
+        console.log('🚀 targetItem found:', targetItem);
         try {
           const combinedData = await fetchAndCombineProduct(targetItem);
-          console.log('🚀 combinedData:', combinedData); // <-- DODAJ
+          console.log('🚀 combinedData:', combinedData);
           renderSingleProduct(combinedData, 0, container);
-          console.log('🚀 renderSingleProduct DONE'); // <-- DODAJ
+          console.log('🚀 renderSingleProduct DONE');
 
           if (typeof setLanguage === 'function') {
             setLanguage(localStorage.getItem('user-lang') || 'pl');
           }
         } catch (err) {
-          console.log('🚀 renderSingleProduct DONE'); // <-- DODAJ
+          console.log('🚀 renderSingleProduct DONE');
           container.innerHTML = `<p class="error-msg">Błąd odczytu plików produktu: ${productIdParam}</p>`;
         }
       } else {

@@ -73,9 +73,9 @@ const headerHTML = `
                     <h3 style="margin-top: 0;">Mój Profil</h3>
                     <p>Użytkownik: <span id="profileUser" style="font-weight: bold;">-</span></p>
                     <p>Rola: <span id="profileRole" style="font-weight: bold;">-</span></p>
-                    <a href="/user_page" id="userPanelLink" class="user-link-btn" style="display: none;">⚙️ Panel Użytkownika</a>
-                    <a href="/email" id="emailInboxLink" class="email-link-btn" style="display: none;">✉️ Skrzynka E-mail</a>
-                    <a href="/admin" id="adminPanelLink" class="admin-link-btn" style="display: none;">⚙️ Panel Administratora</a>
+                    <a href="/user_page" id="userPanelLink" class="user-link-btn user-backdrop-menu-button" style="display: none;">⚙️ Panel Użytkownika</a>
+                    <a href="/email" id="emailInboxLink" class="email-link-btn user-backdrop-menu-button" style="display: none;">✉️ Skrzynka E-mail</a>
+                    <a href="/admin" id="adminPanelLink" class="admin-link-btn user-backdrop-menu-button" style="display: none;">⚙️ Panel Administratora</a>
                     <button id="logoutBtn" style="background: #dc3545; width: 100%; margin-top: 15px;">Wyloguj się 🚪</button>
                 </div>
     

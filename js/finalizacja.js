@@ -341,7 +341,8 @@ async function handleOrderSubmission(e) {
         cena: basket.reduce((sum, item) => sum + (item.display?.price * item.quantity), 0),
         vat: 0.0,
         numer_fv: "",
-        oplacone: false
+        oplacone: "Nieoplacone",
+        status: "ZamowieniePrzyjete"
     };
 
     if (wantsInvoice && invoiceData) {
