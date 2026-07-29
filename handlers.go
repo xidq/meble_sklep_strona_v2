@@ -103,7 +103,7 @@ func getUserOwnOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Dodane r.Method i nil dla custom payloadu
-	forwardToRust(w, r, r.Method, "/user/self/orders", true, nil)
+	forwardToRust(w, r, r.Method, "/usr/self/orders", true, nil)
 }
 func userAccountOperations(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodPut && r.Method != http.MethodDelete {
