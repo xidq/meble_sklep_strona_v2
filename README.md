@@ -22,22 +22,22 @@ Client Browser
       ▼
 ┌─────────────────────────────────────────┐
 │         Go Frontend Server              │
-│  (Port WWW: 443, API: 8444)            │
+│  (Port WWW: 443, API: 8444)             │
 │                                         │
 │  ┌────────────┐   ┌──────────────────┐  │
-│  │ Static     │   │   API Proxy     │  │
-│  │ Files      │   │   to Rust       │  │
+│  │ Static     │   │   API Proxy      │  │
+│  │ Files      │   │   to Rust        │  │
 │  └────────────┘   └──────────────────┘  │
 │  ┌────────────┐   ┌──────────────────┐  │
-│  │ WebSocket  │   │  Upload         │  │
-│  │ Handler    │   │  Handler        │  │
+│  │ WebSocket  │   │  Upload          │  │
+│  │ Handler    │   │  Handler         │  │
 │  └────────────┘   └──────────────────┘  │
 └─────────────────────────────────────────┘
       │
       ▼
 ┌─────────────────────────────────────────┐
 │         Rust Backend                    │
-│  (Port: 8444)                          │
+│  (Port: 8444)                           │
 │                                         │
 │  - Product Management                   │
 │  - Order Processing                     │
