@@ -165,7 +165,7 @@ go run .
 ```
 
 The server will start two HTTPS servers:
-- WWW: Main application server (port 443 by default)
+- WWW: Main application server (port 8443 by default)
 - API: API server (port 8444 by default)
 
 ## API Endpoints
