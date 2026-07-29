@@ -45,7 +45,13 @@ function renderSingleProduct(fullData, index, container) {
   const productName = product[`name_${currentLang}`] || product.name_pl || product.name_id;
   const description = product[`description_${currentLang}`] || product.description_pl || 'Brak opisu.';
   const productId = product.name_id;
-
+// --- WARUNKOWE GENEROWANIE PRZYCISKU KONFIGURATORA ---
+  const hasModel = fullData.model !== null && fullData.model !== undefined && fullData.model !== '';
+  const configuratorBtnHTML = hasModel ? `
+      <a href="model.html?id=${productId}" class="configure-btn" style="padding: 10px 20px; background-color: #2b6cb0; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center;">
+          Konfigurator 3D 🛠️
+      </a>
+  ` : '';
   // Wyciągamy warianty zdjęć (var_1, var_2...)
   const imagesList = Object.keys(fullData)
       .filter(key => key.startsWith('var_'))
@@ -89,9 +95,7 @@ function renderSingleProduct(fullData, index, container) {
                 <button class="add-to-cart-btn" data-product-id="${productId}" style="padding: 10px 20px; background-color: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
                     Dodaj do koszyka 🛒
                 </button>
-                <a href="strony/model.html?id=${productId}" class="configure-btn" style="padding: 10px 20px; background-color: #2b6cb0; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center;">
-                    Konfigurator 3D 🛠️
-                </a>
+                ${configuratorBtnHTML} <!-- Wstawiamy wygenerowany kod lub pusty ciąg znaków -->
             </div>
         </div>
     `;
@@ -159,8 +163,7 @@ function renderSingleProduct(fullData, index, container) {
 
       const badge = document.getElementById('basketCount');
       if (badge) {
-        const totalItems = basket.reduce((sum, item) => sum + item.quantity, 0);
-        badge.textContent = totalItems;
+        badge.textContent = basket.reduce((sum, item) => sum + item.quantity, 0).toString();
         badge.style.display = 'block';
       }
 
@@ -186,7 +189,9 @@ async function initGallery() {
     const responseRouter = await fetch('data/router.json');
     console.log('🚀 router.json status:', responseRouter.status);
     if (!responseRouter.ok) {
-      throw new Error(`Nie udało się załadować router.json: ${responseRouter.status}`);
+      console.error(`Nie udało się załadować router.json: status ${responseRouter.status}`);
+      container.innerHTML = `<p class="error-msg">Nie udało się załadować listy produktów.</p>`;
+      return; // Wcześniejsze zakończenie funkcji (Guard Clause)
     }
     const routerData = await responseRouter.json();
     console.log('🚀 router.json status:', responseRouter.status);
@@ -210,6 +215,7 @@ async function initGallery() {
       // { product: { ...dane z product... }, var_1: { ... }, var_2: { ... } }
       return {
         product: productJson,
+        model: item.model,
         ...imgJson
       };
     }

@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     renderTabs();
-    loadDashboard();
+    loadDashboard().catch(console.error);
 });
 
 function renderTabs() {
@@ -134,7 +134,7 @@ async function saveSettings() {
 
         if (response.ok) {
             alert("Dane zaktualizowane!");
-            loadSettings();
+            await loadSettings();
         } else {
             alert("Błąd aktualizacji danych.");
         }
@@ -149,7 +149,7 @@ async function downloadUserData() {
 
         const safeData = { ...user };
         delete safeData.id;
-        delete safeData.password_hash;
+        delete safeData['password_hash'];
 
         const textContent = JSON.stringify(safeData, null, 2);
         const blob = new Blob([textContent], { type: 'text/plain' });

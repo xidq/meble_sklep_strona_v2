@@ -184,8 +184,11 @@ function showFieldError(inputId, message) {
     input.classList.add('input-error');
 
     // Nadajemy rodzicowi pozycję relatywną, aby błąd pozycjonował się względem niego
-    if (input.parentNode) {
-        input.parentNode.style.position = 'relative';
+    // if (input.parentNode) {
+    //     input.parentNode.style.position = 'relative';
+    // }
+    if (input.parentElement) {
+        input.parentElement.style.position = 'relative';
     }
 
     // Szukamy diva z błędem
@@ -300,22 +303,23 @@ async function handleOrderSubmission(e) {
     const enrichedItems = await Promise.all(basket.map(async (item) => {
         try {
             const response = await fetch(`/api/products/by-name/${item.name_id}`);
-            if (!response.ok) throw new Error("Nie znaleziono produktu");
+            if (!response.ok) {
+                console.error("Nie znaleziono produktu:", item.name_id);
+                return null;
+            }
 
             const productData = await response.json();
 
             return {
                 zamowienie_id: 0,
-                // POPRAWKA: Zabezpieczenie na wypadek gdyby pole id w bazie nazywało się inaczej (np. product_id)
                 product_id: productData.id || productData.product_id || 0,
                 ilosc: item.quantity,
                 cena: item.display?.price || 0,
-                // POPRAWKA: Dodanie wymaganego pola vat do pozycji zamówienia
                 vat: productData.vat || 0.0,
                 konfiguracja: item.type === 'configured' ? item.configuration : null
             };
         } catch (err) {
-            console.error("Błąd podczas pobierania danych produktu:", item.name_id, err);
+            console.error("Błąd sieciowy przy pobieraniu produktu:", item.name_id, err);
             return null;
         }
     }));
@@ -373,10 +377,10 @@ async function handleOrderSubmission(e) {
         });
 
         if (!response.ok) {
-            // POPRAWKA: Czytamy błąd jako tekst (Rust przy 422 zwraca surowy komunikat błędu deserializacji)
             const errorText = await response.text();
             console.error("Surowa odpowiedź błędu z serwera Rust:", errorText);
-            throw new Error(errorText || "Błąd serwera (422) podczas przetwarzania struktury zamówienia.");
+            alert(`Nie udało się złożyć zamówienia: ${errorText || 'Błąd serwera (422)'}`);
+            return; // Zamiast throw – po prostu przerywamy wykonanie
         }
 
         const result = await response.json();
@@ -389,8 +393,8 @@ async function handleOrderSubmission(e) {
         }
 
     } catch (err) {
-        console.error("Błąd krytyczny finalizacji:", err);
-        alert(`Nie udało się złożyć zamówienia: ${err.message}`);
+        console.error("Błąd krytyczny połączenia:", err);
+        alert(`Błąd połączenia: ${err.message}`);
     }
 }
 function setupInputRestrictions() {
@@ -420,8 +424,8 @@ function setupInputRestrictions() {
             // Czyścimy wszystko oprócz cyfr
             let allDigits = value.replace(/[^0-9]/g, '');
 
-            let prefix = '';
-            let mainNumber = '';
+            let prefix;
+            let mainNumber;
 
             if (hasPlus) {
                 // Dla numerów z plusem (np. +48... lub +1... lub +44...)
@@ -461,7 +465,7 @@ function setupInputRestrictions() {
             }
 
             // 5. Składanie finalnego ciągu
-            let newValue = '';
+            let newValue;
             if (prefix) {
                 newValue = prefix + (formattedMain ? ' ' : '') + formattedMain;
             } else {
@@ -521,7 +525,7 @@ function setupInputRestrictions() {
                 // Maksymalnie 5 cyfr dla polskiego kodu pocztowego
                 digits = digits.slice(0, 5);
 
-                let newValue = '';
+                let newValue;
                 if (digits.length > 2) {
                     newValue = digits.slice(0, 2) + '-' + digits.slice(2);
                 } else {

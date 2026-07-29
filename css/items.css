@@ -126,6 +126,7 @@
   }
   .container{
     height: max-content;
+    padding-top: 0;
   }
   .product-card{
     height: max-content;

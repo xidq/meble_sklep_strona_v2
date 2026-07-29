@@ -27,7 +27,7 @@ h1, h2, h3, h4, h5, h6 {
   color: rgba(255,255,255,0.7);           /* Ciemniejszy, bardziej kontrastowy kolor dla nagłówków */
   font-weight: 700;         /* Grubość czcionki (pogrubienie) */
   line-height: 1.2;         /* Nagłówki potrzebują mniejszej interlinii niż zwykły tekst */
-  margin-top: 1.5em;        /* Odstęp nad nagłówkiem */
+  /*margin-top: 1.5em;        !* Odstęp nad nagłówkiem *!*/
   margin-bottom: 0.5em;     /* Odstęp pod nagłówkiem */
 }
 

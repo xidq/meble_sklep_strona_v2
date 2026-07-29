@@ -67,17 +67,17 @@ func (c JWTClaims) GetAudience() (jwt.ClaimStrings, error) {
 var config *Config
 
 // Dozwolone rozszerzenia
-var allowedExtensions = map[string]bool{
-	".glb":  true,
-	".gltf": true,
-	".png":  true,
-	".jpg":  true,
-	".jpeg": true,
-	".webp": true,
-	".avif": true,
-	".json": true,
-	".dds":  true,
-}
+//var allowedExtensions = map[string]bool{
+//	".glb":  true,
+//	".gltf": true,
+//	".png":  true,
+//	".jpg":  true,
+//	".jpeg": true,
+//	".webp": true,
+//	".avif": true,
+//	".json": true,
+//	".dds":  true,
+//}
 
 type ProductCache struct {
 	sync.RWMutex
@@ -206,7 +206,7 @@ func adminUsersProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Przekazujemy dokładnie tę samą ścieżkę do Rusta
 	//baseURL := "/admin/usr"
 	// requiresAuth = true, customPayload = nil
-	targetPath := strings.Replace(r.URL.Path, "/api/admin/usr", "/admin/usr", 1)
+	targetPath := strings.Replace(r.URL.Path, "/api/admin", "/admin", 1)
 	forwardToRust(w, r, r.Method, targetPath, true, nil)
 }
 func adminResponseCheckProxyHandler(w http.ResponseWriter, r *http.Request) {
@@ -466,17 +466,43 @@ func getProductByNameIdProxyHandler(w http.ResponseWriter, r *http.Request) {
 //		nameID := filepath.Base(r.URL.Path)
 //		forwardToRust(w, r, r.Method, "/api/images/upload/"+nameID, true, nil)
 //	}
+//
+//	func uploadFilesHandler(w http.ResponseWriter, r *http.Request) {
+//		if r.Method != http.MethodPost {
+//			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+//			return
+//		}
+//
+//		// USUŃ CAŁY BLOK Z r.ParseMultipartForm ORAZ WERYFIKACJĄ ROZSZERZEŃ!
+//		// Pozwala to zostawić r.Body nienaruszone jako aktywny strumień.
+//
+//		nameID := filepath.Base(r.URL.Path)
+//		forwardToRust(w, r, r.Method, "/api/images/upload/"+nameID, true, nil)
+//	}
 func uploadFilesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// USUŃ CAŁY BLOK Z r.ParseMultipartForm ORAZ WERYFIKACJĄ ROZSZERZEŃ!
-	// Pozwala to zostawić r.Body nienaruszone jako aktywny strumień.
+	// r.URL.Path np: "/api/admin/models/biurko_1" lub "/api/admin/images/biurko_1"
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 3 {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
 
-	nameID := filepath.Base(r.URL.Path)
-	forwardToRust(w, r, r.Method, "/api/images/upload/"+nameID, true, nil)
+	category := parts[len(parts)-2] // "models", "images" lub "produkty"
+	nameID := parts[len(parts)-1]   // name_id
+
+	// Mapowanie dla bezpieczeństwa
+	rustTargetCategory := "images"
+	if category == "models" {
+		rustTargetCategory = "models"
+	}
+
+	targetRustPath := fmt.Sprintf("/api/%s/upload/%s", rustTargetCategory, nameID)
+	forwardToRust(w, r, r.Method, targetRustPath, true, nil)
 }
 
 // ROUTING STRON
@@ -944,10 +970,22 @@ func forwardToRust(w http.ResponseWriter, r *http.Request, method string, target
 		}
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	// --- TYMCZASOWY LOG DEBUGUJĄCY ---
+	if strings.Contains(targetPath, "models") || strings.Contains(targetPath, "images") {
+		log.Printf("[DEBUG UPLOAD] Target path: %s", targetPath)
+		log.Printf("[DEBUG UPLOAD] Content-Type: %s", req.Header.Get("Content-Type"))
 
+		// Jeśli to mały payload lub chcemy podejrzeć nagłówki HTTP żądania do Rusta
+		for k, vv := range req.Header {
+			for _, v := range vv {
+				log.Printf("[DEBUG UPLOAD] Header -> %s: %s", k, v)
+			}
+		}
+	}
+	// ---------------------------------
 	resp, err := insecureHTTPClient.Do(req)
 	if err != nil {
-		log.Printf("Error calling Rust on %s: %v", baseURL, err)
+		log.Printf("[GO PROXY ERROR] Request to %s failed: %v", baseURL, err)
 		http.Error(w, "Backend unavailable", http.StatusBadGateway)
 		return
 	}
@@ -957,6 +995,13 @@ func forwardToRust(w http.ResponseWriter, r *http.Request, method string, target
 			log.Printf("Error closing body: %v", err)
 		}
 	}(resp.Body)
+	//defer func() {
+	//	if resp != nil && resp.Body != nil {
+	//		if err := resp.Body.Close(); err != nil {
+	//			log.Printf("Error closing body: %v", err)
+	//		}
+	//	}
+	//}()
 
 	// Kopiowanie nagłówków odpowiedzi
 	for k, vv := range resp.Header {
@@ -1026,14 +1071,14 @@ func getJWTFromCookie(r *http.Request) string {
 }
 
 // pobiera JWT z nagłówka Authorization
-func getJWTFromHeader(r *http.Request) string {
-
-	auth := r.Header.Get("Authorization")
-	if after, ok := strings.CutPrefix(auth, "Bearer "); ok {
-		return after
-	}
-	return ""
-}
+//func getJWTFromHeader(r *http.Request) string {
+//
+//	auth := r.Header.Get("Authorization")
+//	if after, ok := strings.CutPrefix(auth, "Bearer "); ok {
+//		return after
+//	}
+//	return ""
+//}
 
 // Middleware do sprawdzania autoryzacji
 func authMiddleware(allowedRoles ...string) func(http.HandlerFunc) http.HandlerFunc {
@@ -1061,7 +1106,7 @@ func authMiddleware(allowedRoles ...string) func(http.HandlerFunc) http.HandlerF
 				serveErrorPage(w, r, http.StatusForbidden, "Nieprawidłowy token", "Twój token jest nieprawidłowy lub wygasł.")
 				return
 			}
-			log.Printf("[Middleware] User: %s, Role: %s", claims.Sub, claims.Role)
+			log.Printf("[Middleware] User: %v, Role: %s", claims.Sub, claims.Role)
 
 			// sprawdza rolę
 			if len(allowedRoles) > 0 {
@@ -1313,7 +1358,8 @@ func registerProxyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"Błąd rejestracji na serwerze głównym"}`, http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	//defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	w.WriteHeader(resp.StatusCode)
 	if _, err := io.Copy(w, resp.Body); err != nil {

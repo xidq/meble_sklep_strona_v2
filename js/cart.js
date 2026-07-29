@@ -81,7 +81,7 @@ function renderCart() {
         itemDiv.className = 'cart-item';
 
         // Budujemy tekst specyfikacji, jeśli produkt był konfigurowany w 3D
-        let configMeta = '';
+        let configMeta;
         if (item.type === 'configured' && item.configuration) {
             configMeta = `Opis: Drewno: ${item.configuration.wood}, Metal: ${item.configuration.metal}, Szkło: ${item.configuration.glass}`;
         } else {

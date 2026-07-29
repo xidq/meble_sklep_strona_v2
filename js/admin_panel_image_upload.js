@@ -72,7 +72,7 @@ document.getElementById('p_uploadImageBtn').addEventListener('click', async () =
 
   try {
     // Wysyłamy żądanie do serwera Go
-    const response = await fetch(`/api/admin/produkty/${nameId}`, {
+    const response = await fetch(`/api/admin/images/${nameId}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${currentUser.token}` },
       body: formData // Przeglądarka sama ustawi nagłówek Content-Type wraz z boundary, nie wpisuj go ręcznie!
@@ -144,7 +144,7 @@ document.getElementById('uploadImageBtn').addEventListener('click', async () => 
     try {
       statusDiv.innerHTML += `Wysyłanie: "${file.name}"...<br>`;
 
-      const response = await fetch('/api/admin/produkty/', { //tutaj po upload/ ma być name_id przedmiotu, który jest edytowany
+      const response = await fetch('/api/admin/images/', { //tutaj po upload/ ma być name_id przedmiotu, który jest edytowany
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${currentUser.token}`

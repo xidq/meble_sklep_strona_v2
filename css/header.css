@@ -233,15 +233,119 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   color: rgba(255,255,255,0.7);
 }
 
-@media screen and (orientation: portrait){
-  body{
+/*@media screen and (orientation: portrait){*/
+/*  body{*/
+/*    overflow-y: auto;*/
+/*    overflow-x: clip;*/
+/*  }*/
+/*  .header_btn{*/
+/*    width: fit-content;*/
+/*    border: 1px solid hsla(0, 0%, 100%, 0.2);*/
+/*    font-size: 1.2rem;*/
+/*  }*/
+/*  */
+/*}*/
+@media screen and (orientation: portrait) {
+  body {
+    position: relative;
+    top: 5rem;
+    height: max-content;
     overflow-y: auto;
     overflow-x: clip;
   }
-  .header_btn{
-    width: fit-content;
-    border: 1px solid hsla(0, 0%, 100%, 0.2);
-    font-size: 1.2rem;
+
+  /* Kontener główny nagłówka - pełna szerokość bez wewnętrznych odstępów na boki */
+  header {
+    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  
+
+  /* Kontener prawych przycisków rozciągnięty na resztę miejsca bez odstępów */
+  .nav-controls {
+    display: flex;
+    flex: 4; /* Zajmuje 4 z 5 części nagłówka (pozostałe 1/5 ma pierwsze logo/przycisk) */
+    gap: 0;
+    align-items: center;
+    width: 80%;
+  }
+
+  /* Każdy bezpośredni przycisk/element w headerze i nav-controls zajmuje dokładnie 1/5 szerokości */
+  header > .header_btn,
+  header > button,
+  .nav-controls > * {
+    flex: 1 1 0 !important;
+    width: 20% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  header {
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Reset specyficznych styli szerokości/wysokości przycisków i rozwijanych menu */
+  .header_btn {
+    font-size: 0.9rem;
+    border: 1px solid hsla(0, 0%, 100%, 0.2);
+  }
+
+  .dropdown {
+    width: 20% !important;
+    flex: 1 1 0 !important;
+  }
+  .przyciski_podmenu_container{
+    justify-content: normal;
+  }
+
+  .dropdown-btn {
+    width: 100%;
+    font-size: 0.85rem;
+    padding: 0;
+  }
+
+  #language-switcher {
+    width: 100% !important;
+    font-size: 0.85rem;
+  }
+
+  #basketMenu {
+    width: 100%;
+  }
+  button{
+    padding: 0;
+  }
+
+  .header_btn, #language-switcher, #basketMenu, .dropdown-btn {
+    height: 66px;
+
+    /* Dynamiczna czcionka:
+       - minimalnie: 10px (żeby nie był mikro-druk)
+       - sugerowanie: 3.2vw (płynne skalowanie z ekranem)
+       - maksymalnie: 14px */
+    font-size: clamp(10px, 3.2vw, 2rem) !important;
+
+    /* Zabezpieczenie przed wychodzeniem tekstu z przycisku */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  header > .header_btn,
+  .nav-controls > * {
+    container-type: inline-size;
+  }
+
+  .header_btn, #language-switcher, #basketMenu, .dropdown-btn {
+    height: 66px;
+    /* 14cqw = 14% szerokości przycisku. Clamp zapobiega skrajnościom */
+    font-size: clamp(9px, 14cqw, 15px) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administratora - Produkty</title>
     <link rel="stylesheet" href="/css/admin_panel.css">
 </head>
@@ -19,10 +20,11 @@
 </header>
 
 <div id="adminListThings" class="tabs-container">
-    <button class="tab-btn active" data-tab="tab-products">🛍️ Przedmioty</button>
+    <button class="tab-btn active" data-tab="tab-products">📦 Produkty</button>
     <button class="tab-btn" data-tab="tab-users">👥 Użytkownicy</button>
-    <button class="tab-btn" data-tab="tab-endpoints">🔗 endpoint_check</button>
-    <button class="tab-btn" data-tab="tab-images">🖼️ Foty</button>
+    <button class="tab-btn" data-tab="tab-orders">📜 Zamówienia</button>
+    <button class="tab-btn" data-tab="tab-endpoints">⚡ Endpointy</button>
+    <button class="tab-btn" data-tab="tab-images">📸 Foty</button>
     <button class="tab-btn" data-tab="tab-models">🧊 Modele 3D</button>
 </div>
 
@@ -89,17 +91,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Szerokość (cm):</label>
+                    <label>ilosc drewna(mkw):</label>
                     <input type="number" id="p_wood_qua" step="0.1">
                 </div>
 
                 <div class="form-group">
-                    <label>Wysokość (cm):</label>
+                    <label>ilość metalu(mkw):</label>
                     <input type="number" id="p_metal_qua" step="0.1">
                 </div>
 
                 <div class="form-group">
-                    <label>Głębokość (cm):</label>
+                    <label>ilość szkła (mkw):</label>
                     <input type="number" id="p_glass_qua" step="0.1">
                 </div>
 
@@ -158,9 +160,9 @@
     <div id="tab-users" class="tab-section">
         <div class="admin-container">
             <div class="products-list-panel">
-                <h3 data-i18n="admin_panel_item_list" >📦 Lista produktów</h3>
-                <button id="newUserModeBtn" style="background: #28a745; margin-bottom: 15px; width: 100%;">+ Dodaj nowy produkt</button>
-                <div data-i18n="admin_panel_item_loading" id="usersContainer">Ładowanie produktów...</div>
+                <h3>📦 Lista użytkowników</h3>
+                <button id="newUserModeBtn" style="background: #28a745; margin-bottom: 15px; width: 100%;">+ Dodaj nowego użytkownika</button>
+                <div id="usersContainer">Ładowanie użytkowników...</div>
             </div>
 
             <div class="form-panel">
@@ -258,12 +260,195 @@
             </div>
         </div>
     </div>
+    <!-- ZAKŁADKA ZAMÓWIENIA -->
+    <div id="tab-orders" class="tab-section">
+        <div class="admin-container">
+            <div class="products-list-panel">
+                <h3>📦 Lista zamówień</h3>
+
+                <!-- PANEL FILTRÓW I SORTOWANIA -->
+                <div id="ordersFilterPanel" style="background: #f1f3f5; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85em;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                        <input type="text" id="filter_fv" placeholder="Szukaj FV / ID..." style="flex: 1; min-width: 110px; padding: 4px 8px;">
+                        <input type="text" id="filter_user_id" placeholder="User ID..." style="width: 80px; padding: 4px 8px;">
+                    </div>
+
+                    <!-- NOWE FILTRY STATUSÓW -->
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                        <div style="flex: 1; min-width: 130px;">
+                            <label style="display:block; font-size: 0.75em; color: #555;">Status przesyłki:</label>
+                            <select id="filter_status" style="width: 100%; padding: 4px;">
+                                <option value="">Wszystkie</option>
+                                <option value="ZamowieniePrzyjete">Zamówienie przyjęte</option>
+                                <option value="Wprzygotowaniu">W przygotowaniu</option>
+                                <option value="OczekujeNaWysylke">Oczekuje na wysyłkę</option>
+                                <option value="Wpodrozy">W podróży</option>
+                                <option value="Dostarczone">Dostarczone</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 130px;">
+                            <label style="display:block; font-size: 0.75em; color: #555;">Status płatności:</label>
+                            <select id="filter_oplacone" style="width: 100%; padding: 4px;">
+                                <option value="">Wszystkie</option>
+                                <option value="Nieoplacone">Nieopłacone</option>
+                                <option value="Czesciowo">Częściowo</option>
+                                <option value="Oplacone">Opłacone</option>
+                                <option value="Zwrot">Zwrot</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <label style="display:block; font-size: 0.75em; color: #555;">Od daty:</label>
+                            <input type="date" id="filter_date_from" style="width: 100%; padding: 3px;">
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <label style="display:block; font-size: 0.75em; color: #555;">Do daty:</label>
+                            <input type="date" id="filter_date_to" style="width: 100%; padding: 3px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="sort_orders" style="flex: 1; padding: 4px;">
+                            <option value="date_desc">📅 Data: od najnowszych</option>
+                            <option value="date_asc">📅 Data: od najstarszych</option>
+                            <option value="price_desc">💰 Cena: najwyższa</option>
+                            <option value="price_asc">💰 Cena: najniższa</option>
+                        </select>
+                        <button id="clear_order_filters" style="padding: 4px 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Wyczyść</button>
+                    </div>
+                </div>
+                <div id="ordersContainer">Ładowanie zamówień...</div>
+            </div>
+
+            <div class="form-panel">
+                <h4>📄 Podstawowe dane</h4>
+                <div class="form-group">
+                    <label>ID Zamówienia:</label>
+                    <input type="text" id="o_id" value="0" readonly style="background:#eee;">
+                </div>
+                <div class="form-group">
+                    <label>Numer FV:</label>
+                    <input type="text" id="o_numer_fv">
+                </div>
+                <div class="form-group">
+                    <label>Data złożenia:</label>
+                    <input type="text" id="o_date">
+                </div>
+                <div class="form-group">
+                    <label>User ID:</label>
+                    <input type="text" id="o_user_id" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Imię:</label>
+                    <input type="text" id="o_imie">
+                </div>
+                <div class="form-group">
+                    <label>Nazwisko:</label>
+                    <input type="text" id="o_nazwisko">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="text" id="o_email">
+                </div>
+                <div class="form-group">
+                    <label>Telefon:</label>
+                    <input type="text" id="o_tel">
+                </div>
+
+                <h4>💳 Statusy i Finanse</h4>
+                <div class="form-group">
+                    <label>Status przesyłki:</label>
+                    <select id="o_status">
+                        <option value="ZamowieniePrzyjete">Zamówienie przyjęte</option>
+                        <option value="Wprzygotowaniu">W przygotowaniu</option>
+                        <option value="OczekujeNaWysylke">Oczekuje na wysyłkę</option>
+                        <option value="Wpodrozy">W podróży</option>
+                        <option value="Dostarczone">Dostarczone</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Status płatności:</label>
+                    <select id="o_oplacone">
+                        <option value="Nieoplacone">Nie opłacone</option>
+                        <option value="Czesciowo">Częściowo opłacone</option>
+                        <option value="Oplacone">Opłacone</option>
+                        <option value="Zwrot">Zwrot</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Cena netto (PLN):</label>
+                    <input type="number" id="o_cena" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>VAT (PLN):</label>
+                    <input type="number" id="o_vat" step="0.01">
+                </div>
+
+                <h4>📍 Adres Dostawy (Lokacja)</h4>
+                <div class="form-group">
+                    <label>Ulica:</label>
+                    <input type="text" id="o_ulica">
+                </div>
+                <div class="form-group">
+                    <label>Kod pocztowy:</label>
+                    <input type="text" id="o_kodpocztowy">
+                </div>
+                <div class="form-group">
+                    <label>Miasto:</label>
+                    <input type="text" id="o_miasto">
+                </div>
+
+                <h4>🏢 Dane do Faktury (FV)</h4>
+                <div class="form-group">
+                    <label>Nazwa firmy:</label>
+                    <input type="text" id="o_fv_nazwa_firmy">
+                </div>
+                <div class="form-group">
+                    <label>NIP:</label>
+                    <input type="text" id="o_fv_nip">
+                </div>
+                <div class="form-group">
+                    <label>Ulica FV:</label>
+                    <input type="text" id="o_fv_ulica">
+                </div>
+                <div class="form-group">
+                    <label>Kod pocztowy FV:</label>
+                    <input type="text" id="o_fv_kodpocztowy">
+                </div>
+                <div class="form-group">
+                    <label>Miasto FV:</label>
+                    <input type="text" id="o_fv_miasto">
+                </div>
+
+                <h4>🚚 Transport</h4>
+                <div class="form-group">
+                    <label>Odległość (km):</label>
+                    <input type="number" id="o_tr_odleglosc" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Cena netto transportu:</label>
+                    <input type="number" id="o_tr_cena" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Stawka VAT transportu:</label>
+                    <input type="number" id="o_tr_vat" step="0.01">
+                </div>
+
+                <button id="saveOrderBtn" style="background: #007bff; width: 100%; margin-top: 15px;">Zapisz na serwerze</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="/js/lang.js"></script>
 <script src="/js/admin_panel.js"></script>
 <script src="/js/admin_panel_userlist.js"></script>
+<script src="/js/admin_panel_orders.js"></script>
 <script src="/js/admin_panel_image_upload.js"></script>
-
+<script src="/js/admin_panel_models.js"></script>
 </body>
 </html>

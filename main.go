@@ -150,7 +150,8 @@ func main() {
 	apiMux := http.NewServeMux()
 
 	// Endpointy dla Panelu Admina (Frontend -> Go proxy do Rusta)
-	apiMux.HandleFunc("/api/admin/produkty/", authMiddleware("Admin")(uploadFilesHandler))
+	apiMux.HandleFunc("/api/admin/images/", authMiddleware("Admin")(uploadFilesHandler))
+	apiMux.HandleFunc("/api/admin/models/", authMiddleware("Admin")(uploadFilesHandler))
 	// Zapewne masz coś w tym stylu (mux, chi, lub standardowy http.ServeMux):
 	apiMux.HandleFunc("/api/products", getProductsProxyHandler)  // <-- Dla POST/GET
 	apiMux.HandleFunc("/api/products/", getProductsProxyHandler) // <-- Dla PUT/DELETE z ID
@@ -160,16 +161,18 @@ func main() {
 	apiMux.HandleFunc("/api/products/by-name/", getProductByNameIdProxyHandler)
 	// Endpoint bazowy do pobierania listy i tworzenia użytkownika (POST / GET)
 	apiMux.HandleFunc("/api/admin/usr", authMiddleware("Admin")(adminUsersProxyHandler))
+	apiMux.HandleFunc("/api/admin/orders", authMiddleware("Admin")(adminUsersProxyHandler))
 
 	// Endpoint z parametrem do pobierania pojedynczego i edycji (GET / PUT / DELETE)
 	apiMux.HandleFunc("/api/admin/usr/", authMiddleware("Admin")(adminUsersProxyHandler))
+	apiMux.HandleFunc("/api/admin/orders/", authMiddleware("Admin")(adminUsersProxyHandler))
 	apiMux.HandleFunc("/api/admin/check_response/", authMiddleware("Admin")(adminResponseCheckProxyHandler))
 
 	apiMux.HandleFunc("/api/login", loginProxyHandler)
 	apiMux.HandleFunc("/api/usr/self/data", authMiddleware("Admin", "User", "Legituser")(getUserOwnData))
 	apiMux.HandleFunc("/api/usr/account", userAccountOperations)
 	apiMux.HandleFunc("/api/usr/account/", userAccountOperations)
-	apiMux.HandleFunc("/api/usr/self/orders", getUserOwnOrders)
+	apiMux.HandleFunc("/api/usr/self/orders", authMiddleware("Admin", "User", "Legituser")(getUserOwnOrders))
 	apiMux.HandleFunc("/api/usr/actions/order", putNewUserOrder)
 	apiMux.HandleFunc("/api/getproducts", getProductsProxyHandler)
 	apiMux.HandleFunc("/api/getproducts/", getProductsProxyHandler)

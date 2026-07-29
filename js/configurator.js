@@ -1,4 +1,13 @@
-let engine, scene, camera, shadowGenerator;
+/* global BABYLON */
+/** @type {import('babylonjs').Engine} */
+let engine;
+/** @type {import('babylonjs').Scene} */
+let scene;
+/** @type {import('babylonjs').ArcRotateCamera} */
+let camera;
+/** @type {import('babylonjs').ShadowGenerator} */
+let shadowGenerator;
+// let engine, scene, camera, shadowGenerator;
 let loadedMeshes = [];
 let selectedModelDetails = null;
 
@@ -33,137 +42,255 @@ const activeMaterials = { Wood: null, Metal: null, Glass: null };
 // Cache tekstur – URL -> BABYLON.Texture
 const textureCache = new Map();
 
+/**
+ * @param {{r: number, g: number, b: number}} n
+ * @param {{r: number, g: number, b: number}} k
+ * @returns {Object}
+ */
+// Oblicza kolor F0 (RGB) na podstawie współczynników fizycznych n oraz k dla 3 fal światła
+function calculateConductorF0(n, k) {
+    const calcChannel = (nVal, kVal) => {
+        const num = Math.pow(nVal - 1, 2) + Math.pow(kVal, 2);
+        const den = Math.pow(nVal + 1, 2) + Math.pow(kVal, 2);
+        return num / den;
+    };
+
+    const r = calcChannel(n.r, k.r);
+    const g = calcChannel(n.g, k.g);
+    const b = calcChannel(n.b, k.b);
+
+    return new BABYLON.Color3(r, g, b);
+}
 document.addEventListener(
     "DOMContentLoaded", () => {
         initBabylon();
         scene.executeWhenReady(
             () => {
-            startConfigurator();
+            startConfigurator().catch(err => console.error("Configurator start error:", err));
             }
         );
     }
 );
 
 
-function initBabylon() {
+// function initBabylon() {
+//
+//     const canvas = document.getElementById("renderCanvas");
+//     canvas.style.filter = "blur(0.2px)";
+//
+//     // =========================================================================
+//     //  KONFIGURACJA WARIANTÓW (PC vs MOBILE)
+//     // =========================================================================
+//     // Proste wykrywanie smartfonów/tabletów
+//     const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+//
+//     const CONFIG = isMobile ? {
+//         // Wariant MOBILNY (Lżejszy dla procesora i baterii)
+//         shadowMapSize: 1048,       // Mniejsza mapa cieni
+//         shadowBlurKernel: 32,      // Mniejsze rozmycie cieni
+//         shadowBlurScale: 1,        // Mniejsza skala próbkowania cieni
+//         bloomKernel: 16,           // Słabszy Bloom (bardzo oszczędza GPU)
+//         motionBlurSamples: 8,       // Mało próbek rozmycia (płynniejsze działanie)
+//         fxaaEnabled: false,        // Mobile: wyłączone dla oszczędności baterii
+//         samples: 1                 // Brak MSAA
+//     } : {
+//         // Wariant PC (Maksymalna jakość)
+//         shadowMapSize: 2048,       // Twoje oryginalne ustawienia cieni
+//         shadowBlurKernel: 65,
+//         shadowBlurScale: 2,
+//         bloomKernel: 64,           // Twoje oryginalne ustawienie Blooma
+//         motionBlurSamples: 16,      // Twoje oryginalne ustawienie Motion Blura
+//         fxaaEnabled: true,         // PC: włączone wygładzanie postprocesu
+//         samples: 8                 // PC: MSAA x4 (wygładzanie geometrii na poziomi
+//     };
+//     // =========================================================================
+//
+//
+//     engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true}); // <-- DOPISZ TO KONIECZNIE });
+//     scene = new BABYLON.Scene(engine);
+//     scene.clearColor = new BABYLON.Color4(0.08, 0.08, 0.08, 1.0);
+//
+//     camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 4, Math.PI / 3, 4, BABYLON.Vector3.Zero(), scene);
+//     camera.attachControl(canvas, true);
+//     camera.lowerRadiusLimit = 1;
+//     camera.upperRadiusLimit = 10;
+//     camera.upperBetaLimit = Math.PI / 2 - 0.05;
+//     camera.minZ = 0.01;
+//     camera.maxZ = 100.0;
+//
+//
+//
+//     // const hemiLight = new BABYLON.HemisphericLight("hemiLight", new BABYLON.Vector3(0, 1, 0), scene);
+//     // hemiLight.intensity = 0.2; // Z 0.7 na 0.2 (teraz tylko rozjaśnia najgłębsze zakamarki)
+//
+//
+//     const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-2, -3, -1), scene); // Bardziej z góry (-3 w Y)
+//     dirLight.position = new BABYLON.Vector3(3, 9, 3);
+//     dirLight.intensity = 5.2;
+//     dirLight.shadowMinZ = 0.1;
+//     dirLight.shadowMaxZ = 20;
+//     shadowGenerator = new BABYLON.ShadowGenerator(CONFIG.shadowMapSize, dirLight); //2048
+//     shadowGenerator.useBlurExponentialShadowMap = true;
+//     shadowGenerator.blurKernel = CONFIG.shadowBlurKernel;
+//     // 1. Podnieś bias, aby usunąć główną część acne (Step 4)
+//     // shadowGenerator.bias = 0.003;
+//     shadowGenerator.bias = 0;
+//
+// // 2. Dodaj normalBias, który wpycha geometrię wzdłuż wektora normalnego (Step 5)
+// // To usuwa resztki acne na powierzchniach równoległych do światła, bez wywoływania Peter Panningu
+// //     shadowGenerator.normalBias = 0.02;
+//     shadowGenerator.blurScale = CONFIG.shadowBlurScale;
+//
+//     shadowGenerator.darkness = 0.1;
+//     shadowGenerator.depthScale = 1.0; // WAŻNE, napsuło mi krwi!!!!!!!!!!!!!!!!!!!!11
+//     shadowGenerator.frustumEdgeFalloff = 1.0;
+//     // shadowGenerator.getShadowMap().refreshRate = BABYLON.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+//     dirLight.autoUpdateExtends = false;
+//
+//     window.addEventListener("resize", () => { engine.resize(); });
+//
+//     const legacyEnv = new BABYLON.CubeTexture(
+//         "../data/env/a",
+//         scene,
+//         ["_px.jpg", "_py.jpg", "_pz.jpg", "_nx.jpg", "_ny.jpg", "_nz.jpg"]
+//     );
+//     legacyEnv.processLightingInfoFromCustomAsymmetry = true;
+//     if (legacyEnv.updateLightingInfo) {
+//         legacyEnv.updateLightingInfo();
+//
+//     }
+//     scene.environmentTexture = legacyEnv;
+//
+//     scene.environmentIntensity = 1.0;
+//     // =========================================================================
+//     //  ZINTEGROWANY POTOK EFEKTÓW (BLOOM + MOTION BLUR + TONE MAPPING)
+//     // =========================================================================
+//
+//     const pipeline = new BABYLON.DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
+//     // pipeline.chromaticAberrationEnabled = true; pipeline.chromaticAberration.intensity = 0; // Trik aktywujący wewnętrzny pass
+//     // 1. TONE MAPPING (Przeniesiony bezpośrednio do potoku)
+//     pipeline.imageProcessingEnabled = true;
+//     pipeline.imageProcessing.toneMappingEnabled = true;
+//     pipeline.imageProcessing.toneMappingType = 2; // Typ 2
+//
+//     // BLOOM
+//     pipeline.bloomEnabled = true;
+//     pipeline.bloomThreshold = 0.8; // Obiekty o jasności powyżej 60% zaczną generować poświatę
+//     pipeline.bloomWeight = 0.5;    // Siła poświaty
+//     pipeline.bloomKernel = CONFIG.bloomKernel;     // Rozmycie poświaty (wielkość blasku)
+//
+//
+//     // =====================================================================
+//
+//     // ANTYALIASING (Wygładzanie ostrych krawędzi)
+//     pipeline.fxaaEnabled = CONFIG.fxaaEnabled; // Wygładza krawędzie rozmyte przez Bloom/Motion Blur
+//     pipeline.samples = CONFIG.samples;
+//
+//
+//     // motion blur
+//     const motionBlur = new BABYLON.MotionBlurPostProcess(
+//         "mb",
+//         scene,
+//         1.0,
+//         camera
+//     );
+//     motionBlur.motionStrength = 2.0;
+//     motionBlur.motionBlurSamples = CONFIG.motionBlurSamples;
+//     motionBlur.disableObjectBasedMotionBlur = true;
+//
+//     engine.runRenderLoop(() => { scene.render(); });
+//
+//     // scene.debugLayer.show();
+// }
 
+function initBabylon() {
     const canvas = document.getElementById("renderCanvas");
     canvas.style.filter = "blur(0.2px)";
 
-    // =========================================================================
-    //  KONFIGURACJA WARIANTÓW (PC vs MOBILE)
-    // =========================================================================
-    // Proste wykrywanie smartfonów/tabletów
     const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
     const CONFIG = isMobile ? {
-        // Wariant MOBILNY (Lżejszy dla procesora i baterii)
-        shadowMapSize: 1048,       // Mniejsza mapa cieni
-        shadowBlurKernel: 32,      // Mniejsze rozmycie cieni
-        shadowBlurScale: 1,        // Mniejsza skala próbkowania cieni
-        bloomKernel: 16,           // Słabszy Bloom (bardzo oszczędza GPU)
-        motionBlurSamples: 8,       // Mało próbek rozmycia (płynniejsze działanie)
-        fxaaEnabled: false,        // Mobile: wyłączone dla oszczędności baterii
-        samples: 1                 // Brak MSAA
+        shadowMapSize: 1024,
+        bloomKernel: 16,
+        motionBlurSamples: 8,
+        fxaaEnabled: false,
+        samples: 1
     } : {
-        // Wariant PC (Maksymalna jakość)
-        shadowMapSize: 2048,       // Twoje oryginalne ustawienia cieni
-        shadowBlurKernel: 65,
-        shadowBlurScale: 2,
-        bloomKernel: 64,           // Twoje oryginalne ustawienie Blooma
-        motionBlurSamples: 16,      // Twoje oryginalne ustawienie Motion Blura
-        fxaaEnabled: true,         // PC: włączone wygładzanie postprocesu
-        samples: 8                 // PC: MSAA x4 (wygładzanie geometrii na poziomi
+        shadowMapSize: 2048,
+        bloomKernel: 64,
+        motionBlurSamples: 16,
+        fxaaEnabled: true,
+        samples: 8
     };
-    // =========================================================================
 
-
-    engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true}); // <-- DOPISZ TO KONIECZNIE });
+    engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
     scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color4(0.08, 0.08, 0.08, 1.0);
 
     camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 4, Math.PI / 3, 4, BABYLON.Vector3.Zero(), scene);
     camera.attachControl(canvas, true);
+
     camera.lowerRadiusLimit = 1;
     camera.upperRadiusLimit = 10;
     camera.upperBetaLimit = Math.PI / 2 - 0.05;
     camera.minZ = 0.01;
     camera.maxZ = 100.0;
 
-
-
-    // const hemiLight = new BABYLON.HemisphericLight("hemiLight", new BABYLON.Vector3(0, 1, 0), scene);
-    // hemiLight.intensity = 0.2; // Z 0.7 na 0.2 (teraz tylko rozjaśnia najgłębsze zakamarki)
-
-
-    const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-2, -3, -1), scene); // Bardziej z góry (-3 w Y)
+    // --- OŚWIETLENIE I CIENIE ---
+    const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-2, -3, -1), scene);
     dirLight.position = new BABYLON.Vector3(3, 9, 3);
-    dirLight.intensity = 5.2;
+    dirLight.intensity = 4.5;
+
+    // Dopasowanie zasięgu światła zapobiega obcinaniu cieni
     dirLight.shadowMinZ = 0.1;
     dirLight.shadowMaxZ = 20;
-    shadowGenerator = new BABYLON.ShadowGenerator(CONFIG.shadowMapSize, dirLight); //2048
-    shadowGenerator.useBlurExponentialShadowMap = true;
-    shadowGenerator.blurKernel = CONFIG.shadowBlurKernel;
-    shadowGenerator.bias = 0.0005;
-    shadowGenerator.blurScale = CONFIG.shadowBlurScale;
 
-    shadowGenerator.darkness = 0.0;
-    shadowGenerator.depthScale = 1.0; // WAŻNE, napsuło mi krwi!!!!!!!!!!!!!!!!!!!!11
+    // Generowanie cieni
+    shadowGenerator = new BABYLON.ShadowGenerator(CONFIG.shadowMapSize, dirLight);
+
+    // Używamy PCF – daje najlepsze rezultaty dla self-shadowingu w PBR bez wycieków cieni
+    shadowGenerator.usePercentageCloserFiltering = true;
+    shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
+
+    // Klucz do poprawnego Self-Shadowing:
+    shadowGenerator.bias = 0.001;        // Zapobiega przesunięciu cienia (Peter-Panning)
+    shadowGenerator.normalBias = 0.001;   // Wpycha geometrię wzdłuż wektorów normalnych, likwidując "shadow acne"
+
+    shadowGenerator.darkness = 0.001;     // Głębokość cienia
+    shadowGenerator.transparencyShadow = true; // Uwzględnia przezroczyste materiały (np. szkło)
 
     window.addEventListener("resize", () => { engine.resize(); });
 
+    // Environment & Post-processing
+    /** @type {import('babylonjs').CubeTexture} */
     const legacyEnv = new BABYLON.CubeTexture(
-        "../data/env/a",
+        "/data/env/a",
         scene,
         ["_px.jpg", "_py.jpg", "_pz.jpg", "_nx.jpg", "_ny.jpg", "_nz.jpg"]
     );
-    legacyEnv.processLightingInfoFromCustomAsymmetry = true;
-    if (legacyEnv.updateLightingInfo) {
-        legacyEnv.updateLightingInfo();
-
-    }
+    if (legacyEnv.updateLightingInfo) legacyEnv.updateLightingInfo();
     scene.environmentTexture = legacyEnv;
-
     scene.environmentIntensity = 1.0;
-    // =========================================================================
-    //  ZINTEGROWANY POTOK EFEKTÓW (BLOOM + MOTION BLUR + TONE MAPPING)
-    // =========================================================================
-
+    /** @type {import('babylonjs').DefaultRenderingPipeline} */
     const pipeline = new BABYLON.DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
-    // pipeline.chromaticAberrationEnabled = true; pipeline.chromaticAberration.intensity = 0; // Trik aktywujący wewnętrzny pass
-    // 1. TONE MAPPING (Przeniesiony bezpośrednio do potoku)
     pipeline.imageProcessingEnabled = true;
     pipeline.imageProcessing.toneMappingEnabled = true;
-    pipeline.imageProcessing.toneMappingType = 2; // Typ 2
+    pipeline.imageProcessing.toneMappingType = 2;
 
-    // BLOOM
     pipeline.bloomEnabled = true;
-    pipeline.bloomThreshold = 0.8; // Obiekty o jasności powyżej 60% zaczną generować poświatę
-    pipeline.bloomWeight = 0.5;    // Siła poświaty
-    pipeline.bloomKernel = CONFIG.bloomKernel;     // Rozmycie poświaty (wielkość blasku)
+    pipeline.bloomThreshold = 0.8;
+    pipeline.bloomWeight = 0.5;
+    pipeline.bloomKernel = CONFIG.bloomKernel;
 
-
-    // =====================================================================
-
-    // ANTYALIASING (Wygładzanie ostrych krawędzi)
-    pipeline.fxaaEnabled = CONFIG.fxaaEnabled; // Wygładza krawędzie rozmyte przez Bloom/Motion Blur
+    pipeline.fxaaEnabled = CONFIG.fxaaEnabled;
     pipeline.samples = CONFIG.samples;
 
-
-    // motion blur
-    const motionBlur = new BABYLON.MotionBlurPostProcess(
-        "mb",
-        scene,
-        1.0,
-        camera
-    );
+    const motionBlur = new BABYLON.MotionBlurPostProcess("mb", scene, 1.0, camera);
     motionBlur.motionStrength = 2.0;
     motionBlur.motionBlurSamples = CONFIG.motionBlurSamples;
     motionBlur.disableObjectBasedMotionBlur = true;
 
     engine.runRenderLoop(() => { scene.render(); });
-
-    // scene.debugLayer.show();
 }
 
 // 2. Asynchroniczne pobieranie danych i konfiguracja wejściowa (POPRAWIONA)
@@ -173,7 +300,7 @@ async function startConfigurator() {
 
     try {
         // Krok A: Pobieramy router.json i szukamy wpisu dla danego ID
-        const resRouter = await fetch('../data/router.json');
+        const resRouter = await fetch('/data/router.json');
         const routerData = await resRouter.json();
         const activeRoute = routerData.find(item => item.id === modelId);
 
@@ -186,9 +313,9 @@ async function startConfigurator() {
         const [resProduct, resModel, resWood, resMetal, resGlass] = await Promise.all([
             fetch(activeRoute.product),
             fetch(activeRoute.model),
-            fetch('../data/textures/textures.json'),
-            fetch('../data/textures/metal_material.json'),
-            fetch('../data/textures/glass_material.json')
+            fetch('/data/textures/textures.json'),
+            fetch('/data/textures/metal_material.json'),
+            fetch('/data/textures/glass_material.json')
         ]);
 
         const productData = await resProduct.json();
@@ -206,9 +333,9 @@ async function startConfigurator() {
             ao: modelJson.ao,                             // ścieżka do pliku .dds (ambient occlusion)
             texture_scale: modelJson.texture_scale || 1.0,
             basePrice: parseFloat(productData.price) || 0, // mapowanie z price
-            mkw: parseFloat(productData.wood_quant) || 1.0,// mapowanie z wood_quant
-            ilosc_metal: parseFloat(productData.metal_quant) || 0.0, // mapowanie z metal_quant
-            ilosc_szklo: parseFloat(productData.glass_quant) || 0.0  // mapowanie z glass_quant
+            mkw: parseFloat(modelJson.wood ?? productData.wood) || 1.0,// mapowanie z wood_quant
+            ilosc_metal: parseFloat(modelJson.metal ?? productData.metal) || 0.0, // mapowanie z metal_quant
+            ilosc_szklo: parseFloat(modelJson.glass ?? productData.glass) || 0.0  // mapowanie z glass_quant
         };
 
         // Krok D: Ładowanie słowników materiałów
@@ -246,9 +373,9 @@ function loadGlbModel(glbUrl, modelDetails) {
         const maxDimension = Math.max(size.x, size.y, size.z);
         camera.radius = maxDimension * 2.5;
 
-        if (rootMesh) {
-            shadowGenerator.addShadowCaster(rootMesh, true);
-        }
+        // if (rootMesh) {
+        //     shadowGenerator.addShadowCaster(rootMesh, true);
+        // }
 
 
 
@@ -300,6 +427,11 @@ function loadGlbModel(glbUrl, modelDetails) {
         meshesByType.Glass = [];
 
         meshes.forEach(mesh => {
+
+            if (!mesh.getTotalVertices || mesh.getTotalVertices() === 0) return;
+
+            shadowGenerator.addShadowCaster(mesh);
+            mesh.receiveShadows = true;
             console.log('Mesh:', mesh.name, 'Material:', mesh.material?.name);
             if (mesh.material) {
                 const matName = mesh.material.name ? mesh.material.name.toLowerCase() : "";
@@ -573,19 +705,43 @@ function applyPbrPropertiesToType(typeId, materialItem) {
     mat.bumpTexture = null;
     mat.roughnessTexture = null;
 
-    if (materialItem.color) {
-        mat.albedoColor = BABYLON.Color3.FromHexString(materialItem.color);
-    }
-    if (materialItem.metallic !== undefined) mat.metallic = parseFloat(materialItem.metallic);
-    if (materialItem.roughness !== undefined) mat.roughness = parseFloat(materialItem.roughness);
-    if (materialItem.ior !== undefined) mat.indexOfRefraction = parseFloat(materialItem.ior);
+    if (typeId === "Metal") {
+        mat.metallic = 1.0;
+        mat.roughness = materialItem.roughness !== undefined ? parseFloat(materialItem.roughness) : 0.2;
 
-    if (typeId === "Glass") {
-        mat.linkRefractionWithTransparency = true;
-        mat.alpha = materialItem.alpha !== undefined ? parseFloat(materialItem.alpha) : 0.4;
+        // Jeśli w JSON mamy fizyczne parametry n oraz k:
+        if (materialItem.n && materialItem.k) {
+            // 1. Obliczamy fizycznie poprawny kolor bazowy odbicia F0
+            mat.albedoColor = calculateConductorF0(materialItem.n, materialItem.k);
+
+            // 2. Wartość n dla średniej fali (zieleni) przypisujemy jako IOR shadera
+            mat.indexOfRefraction = materialItem.n.g;
+        } else {
+            // Fallback, gdyby brakowało danych w JSON
+            mat.albedoColor = new BABYLON.Color3(0.95, 0.81, 0.45);
+            mat.indexOfRefraction = 0.44;
+        }
+
+        mat.alpha = 1.0;
+        mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_OPAQUE;
+        mat.backFaceCulling = true;
+    } else if (typeId === "Glass") {
+        // Skala transparency z JSON (1.0 = w pełni przezroczyste, 0.0 = kryjące)
+        let transVal = materialItem.transparency !== undefined ? parseFloat(materialItem.transparency) : 0.8;
+
+        // Obliczamy alpha (0.0 = w pełni przezroczyste, 1.0 = kryjące)
+        mat.alpha = 1.0 - transVal;
+
+        // Kluczowe wymuszenie przezroczystości w Babylon.js PBR:
+        mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
+        mat.useAlphaFromAlbedoTexture = false;
+        mat.forceDepthWrite = true; // Zapewnia prawidłowe renderowanie głębi/cieni przez przezroczysty obiekt
+        mat.backFaceCulling = false; // Widoczne ścianki z obu stron
+
     } else {
         mat.alpha = 1.0;
-        mat.linkRefractionWithTransparency = false;
+        mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_OPAQUE;
+        mat.backFaceCulling = true;
     }
 
     calculateFinalPrice();
@@ -705,11 +861,18 @@ function addConfiguredProductToCart() {
     // Wywołanie aktualizacji bąbelka w menu (funkcja z auth_ui.js)
     if (typeof updateBasketDOM === "function") {
         updateBasketDOM();
+    // } else {
+    //     const badge = document.getElementById('basketCount');
+    //     if (badge) {
+    //         const totalItems = basket.reduce((sum, item) => sum + item.quantity, 0);
+    //         badge.textContent = totalItems;
+    //         badge.style.display = 'block';
+    //     }
+    // }
     } else {
         const badge = document.getElementById('basketCount');
         if (badge) {
-            const totalItems = basket.reduce((sum, item) => sum + item.quantity, 0);
-            badge.textContent = totalItems;
+            badge.textContent = basket.reduce((sum, item) => sum + item.quantity, 0);
             badge.style.display = 'block';
         }
     }

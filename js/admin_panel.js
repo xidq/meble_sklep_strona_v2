@@ -60,70 +60,7 @@ newProductModeBtn.addEventListener('click', () => {
     formTitle.textContent = "🛠️ Dodaj Nowy Produkt";
     deselectAll('.product-item');
 });
-// async function fetchProducts() {
-//     try {
-//         const response = await fetch("/api/getproducts"); // Powinno lecieć z cache z serwera Go
-//         if (!response.ok) throw new Error("Błąd pobierania");
-//         allProducts = await response.json();
-//         renderProductsList();
-//     } catch (error) {
-//         productsContainer.innerHTML = `<span style="color:red">${error.message}</span>`;
-//     }
-// }
 
-// --- LOGIKA WEBSOCKET ---
-// function connectWebSocket() {
-//     socket = new WebSocket("/wss");
-//
-//     socket.onopen = () => {
-//         console.log("[WS] Połączono z serwerem!");
-//     };
-//
-//     socket.onmessage = (event) => {
-//         const data = JSON.parse(event.data);
-//         if (data.type === 'REFRESH_PRODUCTS') {
-//             fetchProducts();
-//         }
-//     };
-//
-//     socket.onclose = () => {
-//         console.log("[WS] Rozłączono. Próba połączenia za 5s...");
-//         setTimeout(connectWebSocket, 5000);
-//     };
-// }
-
-// --- LOGIKA PRODUKTÓW ---
-// async function checkAuth() {
-//     const storedUser = localStorage.getItem('currentUser');
-//     if (!storedUser) {
-//         window.location.href = "../index.html";
-//         return;
-//     }
-//     currentUser = JSON.parse(storedUser);
-//     if (currentUser.role !== "Admin") {
-//         window.location.href = "../index.html";
-//         return;
-//     }
-//     document.getElementById('adminPanel').style.display = 'block';
-//     fetchProducts();
-// }
-// async function checkAuth() {
-//     try {
-//         const res = await fetch('/api/me', { credentials: 'include' });
-//         if (!res.ok) throw new Error('Not authenticated');
-//         const data = await res.json();
-//         currentUser = data;
-//         window.currentUser = data; // sync with global
-//         if (currentUser.role !== "Admin") {
-//             window.location.href = "../index.html";
-//             return;
-//         }
-//         document.getElementById('adminPanel').style.display = 'block';
-//         fetchProducts();
-//     } catch (e) {
-//         window.location.href = "../index.html";
-//     }
-// }
 
 function renderProductsList() {
     productsContainer.innerHTML = "";
@@ -191,21 +128,7 @@ saveProductBtn.addEventListener('click', async () => {
         if (!rawValue || rawValue.trim() === "") return isFloat ? 0.0 : "";
         return isFloat ? parseFloat(rawValue) : rawValue;
     };
-    // const productPayload = {
-    //     id: parseInt(document.getElementById('p_id').value),
-    //     name_id: document.getElementById('p_name_id').value,
-    //     name_pl: document.getElementById('p_name_pl').value,
-    //     name_en: document.getElementById('p_name_en').value,
-    //     description_pl: document.getElementById('p_desc_pl').value,
-    //     description_en: document.getElementById('p_desc_en').value,
-    //     price: parseFloat(document.getElementById('p_price').value),
-    //     width: parseFloat(document.getElementById('p_width').value),
-    //     height: parseFloat(document.getElementById('p_height').value),
-    //     depth: parseFloat(document.getElementById('p_depth').value),
-    //     wood_qua: parseFloat(document.getElementById('p_wood_qua').value),
-    //     metal_qua: parseFloat(document.getElementById('p_metal_qua').value),
-    //     glass_qua: parseFloat(document.getElementById('p_glass_qua').value)
-    // };
+
     const productPayload = {
         id: parseInt(document.getElementById('p_id').value) || 0,
         name_id: val('p_name_id'),

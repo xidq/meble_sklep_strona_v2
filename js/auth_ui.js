@@ -6,7 +6,7 @@ const headerHTML = `
         <h1 data-i18n="welcome" style="margin: 0; font-size: 24px; color: black;">System i WebSocket</h1>
     </a>
 
-    <div>
+    <div class="przyciski_podmenu_container">
         <button class="header_btn glow" onclick="window.location.href = '/strony/produkty.html'" data-i18n="nav_products"> meble </button>
         <button class="header_btn glow" onclick="window.location.href = '/strony/kontakt.html'" data-i18n="nav_contact"> meble </button>
     </div>
