@@ -29,10 +29,10 @@ function renderSingleProduct(fullData, index, container) {
   const product = fullData.product || fullData;
   const card = document.createElement('div');
   card.className = 'product-card';
-
+  console.log(product);
   const currentLang = localStorage.getItem('user-lang') || 'pl';
   const productName = product[`name_${currentLang}`] || product.name_pl || product.name_id;
-  const description = product[`description_${currentLang}`] || product.description_pl || 'Brak opisu.';
+  const description = product[`desc_${currentLang}`] || product.desc_pl || 'Brak opisu.';
   const productId = product.name_id;
 
   const hasModel = fullData.model !== null && fullData.model !== undefined && fullData.model !== '';
@@ -61,8 +61,8 @@ function renderSingleProduct(fullData, index, container) {
                 ${productName}
             </h2>
             <p class="product-description" 
-               data-desc-pl="${product.description_pl || ''}" 
-               data-desc-en="${product.description_en || ''}">
+               data-desc-pl="${product.desc_pl || ''}" 
+               data-desc-en="${product.desc_en || ''}">
                ${description}
             </p>
             <div class="product-specs">

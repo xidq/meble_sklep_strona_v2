@@ -441,7 +441,18 @@ function buildMaterialDropdowns() {
             const option = document.createElement('option');
             option.value = item.id || item.name;
 
-            const priceTag = item.price ? ` (+${item.price} zł)` : "";
+            let quantity = 0;
+            if (slot.id === "Wood") {
+                quantity = selectedModelDetails.mkw || 1.0;
+            } else if (slot.id === "Metal") {
+                quantity = selectedModelDetails.ilosc_metal || 0.0;
+            } else if (slot.id === "Glass") {
+                quantity = selectedModelDetails.ilosc_szklo || 0.0;
+            }
+            const unitPrice = item.price || 0;
+            const calculatedPrice = (quantity * unitPrice) * 1.3;
+
+            const priceTag = calculatedPrice ? ` (+${calculatedPrice.toFixed(2)} zł)` : "";
             option.textContent = `${item.name}${priceTag}`;
             select.appendChild(option);
         });
@@ -666,11 +677,11 @@ function applyPbrPropertiesToType(typeId, materialItem) {
         mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_OPAQUE;
         mat.backFaceCulling = true;
     } else if (typeId === "Glass") {
-        let transVal = materialItem.transparency !== undefined ? parseFloat(materialItem.transparency) : 0.8;
-        mat.alpha = 1.0 - transVal;
+        let transVal = materialItem.transparency !== undefined ? parseFloat(materialItem.transparency) : 0.75;
 
         mat.metallic = 0.0;
-        mat.roughness = materialItem.roughness !== undefined ? parseFloat(materialItem.roughness) : 0.1;
+        const isFrosted = materialItem.nam_en === "frosted_glass";
+        mat.roughness = isFrosted ? 0.6 : (materialItem.roughness !== undefined ? parseFloat(materialItem.roughness) : 0.05);
 
         if (materialItem.color) {
             mat.albedoColor = BABYLON.Color3.FromHexString(materialItem.color);
@@ -681,18 +692,32 @@ function applyPbrPropertiesToType(typeId, materialItem) {
         if (materialItem.ior !== undefined) {
             mat.indexOfRefraction = parseFloat(materialItem.ior);
         }
+        if (isFrosted) {
+            mat.subSurface.isTranslucencyEnabled = true;
+            mat.subSurface.translucencyIntensity = 0.85;
+            mat.subSurface.minimumThickness = 0.01;
+            mat.subSurface.maximumThickness = 0.5;
+        } else {
+            mat.subSurface.isTranslucencyEnabled = false;
+            mat.subSurface.minimumThickness = 0.01;
+            mat.subSurface.maximumThickness = 0.5;
+        }
+
+        mat.subSurface.isRefractionEnabled = true;
+        mat.subSurface.indexOfRefraction = mat.indexOfRefraction;
+        mat.subSurface.tintColor = isFrosted ? mat.albedoColor.clone() : mat.albedoColor.clone().scale(2.0);
+        mat.alpha = isFrosted ? 0.8 : (1.0 - transVal);
+        mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
+        mat.useAlphaFromAlbedoTexture = false;
+
+        mat.backFaceCulling = false;
+
+        mat.needDepthPrePass = true;
+        mat.forceDepthWrite = false;
 
         if (scene.environmentTexture) {
             mat.reflectionTexture = scene.environmentTexture;
         }
-
-        mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
-        mat.useAlphaFromAlbedoTexture = false;
-        mat.forceDepthWrite = false;
-        mat.backFaceCulling = false;
-
-        mat.subSurface.isRefractionEnabled = true;
-        mat.subSurface.indexOfRefraction = mat.indexOfRefraction;
     } else {
         mat.alpha = 1.0;
         mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_OPAQUE;
