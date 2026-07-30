@@ -260,7 +260,7 @@ function loadGlbModel(glbUrl, modelDetails) {
             shadowGenerator.addShadowCaster(mesh);
             mesh.receiveShadows = true;
 
-            console.log('Mesh:', mesh.name, 'Material:', mesh.material?.name);
+            // console.log('Mesh:', mesh.name, 'Material:', mesh.material?.name);
 
             if (mesh.material) {
                 const matName = mesh.material.name ? mesh.material.name.toLowerCase() : "";
@@ -532,10 +532,30 @@ function applyPbrPropertiesToType(typeId, materialItem) {
         let transVal = materialItem.transparency !== undefined ? parseFloat(materialItem.transparency) : 0.8;
         mat.alpha = 1.0 - transVal;
 
+        mat.metallic = 0.0;
+        mat.roughness = materialItem.roughness !== undefined ? parseFloat(materialItem.roughness) : 0.1;
+
+        if (materialItem.color) {
+            mat.albedoColor = BABYLON.Color3.FromHexString(materialItem.color);
+        } else {
+            mat.albedoColor = new BABYLON.Color3(1, 1, 1);
+        }
+
+        if (materialItem.ior !== undefined) {
+            mat.indexOfRefraction = parseFloat(materialItem.ior);
+        }
+
+        if (scene.environmentTexture) {
+            mat.reflectionTexture = scene.environmentTexture;
+        }
+
         mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
         mat.useAlphaFromAlbedoTexture = false;
-        mat.forceDepthWrite = true;
+        mat.forceDepthWrite = false;
         mat.backFaceCulling = false;
+
+        mat.subSurface.isRefractionEnabled = true;
+        mat.subSurface.indexOfRefraction = mat.indexOfRefraction;
     } else {
         mat.alpha = 1.0;
         mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_OPAQUE;

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Konfigurator 3D Meble (Babylon.js)</title>
     <!-- preconnect ładowanie -->
-    <link rel="preconnect" href="https://cdn.babylonjs.com" crossorigin>
-    <link rel="dns-prefetch" href="https://cdn.babylonjs.com"> <!-- na starsze przeglądarki -->
+<!--    <link rel="preconnect" href="https://cdn.babylonjs.com" crossorigin>-->
+<!--    <link rel="dns-prefetch" href="https://cdn.babylonjs.com"> &lt;!&ndash; na starsze przeglądarki &ndash;&gt;-->
     <link rel="preload" href="/css/header.css" as="style">
     <link rel="preload" href="/css/text.css" as="style">
 
@@ -17,8 +17,8 @@
     <script defer src="/js/vendor/babylon.js"></script>
     <script defer src="/js/vendor/babylonjs.loaders.min.js"></script>
 
-    <script defer src="/js/lang.js"></script>
     <script defer src="/js/auth_ui.js"></script>
+    <script defer src="/js/lang.js"></script>
 
     <script defer src="/js/configurator.js"></script>
     <style>
@@ -34,7 +34,7 @@
         #price-box { font-size: 28px; font-weight: 700; color: #111; margin-top: auto; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: space-between; align-items: center; }
         #price-box span { color: #0056b3; }
         #loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; z-index: 100; transition: opacity 0.3s; }
-        @media screen and (orientation: portrait), (max-width: 768px) {
+        @media screen and (orientation: portrait) {
             #app-container {
                 flex-direction: column;
                 overflow-y: auto;
@@ -64,8 +64,8 @@
     </style>
 </head>
 <body>
-<script src="../js/auth_ui.js"></script>
-<script src="../js/lang.js"></script>
+<!--<script src="../js/auth_ui.js"></script>-->
+<!--<script src="../js/lang.js"></script>-->
 
 <!-- CDN Babylon.js oraz Loader dla GLTF/GLB -->
 <!--<script src="https://cdn.babylonjs.com/babylon.js"></script>-->
