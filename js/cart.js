@@ -3,8 +3,6 @@
 // =========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    // injectClearCartButton();
     renderCart();
 
     // Podpięcie przycisku finalizacji zamówienia
@@ -17,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             // Przekierowanie na podstronę formularza zamówienia
-            window.location.href = '../strony/finalizacja.html';
+            window.location.href = '/strony/finalizacja.html';
         });
     }
 });
@@ -42,24 +40,23 @@ function injectClearCartButton() {
 
     clearBtn.addEventListener('click', clearAllCart);
 
-    // Wstawiamy przycisk bezpośrednio przed przyciskiem płatności
     checkoutBtn.parentNode.insertBefore(clearBtn, checkoutBtn);
 }
 
-// 1. Renderowanie listy produktów i podliczenie szacowanej ceny wizualnej
 function renderCart() {
     const listContainer = document.getElementById('cart-items-list');
     const totalContainer = document.getElementById('cart-total-price');
     if (!listContainer) return;
 
-    // Pobieramy koszyk z localStorage
+    const currentLang = localStorage.getItem('user-lang') || 'pl';
+    const dict = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang] : {};
     const basket = JSON.parse(localStorage.getItem('cart')) || [];
 
     if (basket.length === 0) {
-        listContainer.innerHTML = `<p class="empty-msg">Twój koszyk jest pusty. Dodaj produkty, aby zobaczyć je tutaj.</p>`;
+        const emptyMsg = dict.cart_empty || "Twój koszyk jest pusty. Dodaj produkty, aby zobaczyć je tutaj.";
+        listContainer.innerHTML = `<p class="empty-msg" data-i18n="cart_empty">${emptyMsg}</p>`;
         if (totalContainer) totalContainer.innerText = "0.00 zł";
 
-        // Ukrywamy przycisk czyszczenia, jeśli koszyk stał się pusty
         const existingClearBtn = document.getElementById('clear-cart-btn');
         if (existingClearBtn) existingClearBtn.remove();
         return;
@@ -69,8 +66,6 @@ function renderCart() {
     let visualTotalSum = 0;
 
     basket.forEach((item) => {
-        // ABSOLUTNE ZABEZPIECZENIE: Jeśli item lub item.display nie istnieje,
-        // podstawiamy bezpieczne wartości domyślne, dzięki czemu pętla nigdy się nie wywali.
         const itemPrice = (item && item.display && typeof item.display.price === 'number') ? item.display.price : 0.00;
         const itemTitle = (item && item.display && item.display.title) ? item.display.title : (item.name_id || "Produkt bez nazwy");
 
@@ -80,7 +75,6 @@ function renderCart() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'cart-item';
 
-        // Budujemy tekst specyfikacji, jeśli produkt był konfigurowany w 3D
         let configMeta;
         if (item.type === 'configured' && item.configuration) {
             configMeta = `Opis: Drewno: ${item.configuration.wood}, Metal: ${item.configuration.metal}, Szkło: ${item.configuration.glass}`;
@@ -116,26 +110,22 @@ function renderCart() {
     injectClearCartButton();
 }
 
-// 2. Zmiana ilości sztuk (+1 / -1)
 window.changeQuantity = function(itemId, change) {
     let basket = JSON.parse(localStorage.getItem('cart')) || [];
     const item = basket.find(i => i.id === itemId);
 
     if (item) {
         item.quantity += change;
-        // Jeśli ilość spadnie do zera lub mniej, usuwamy pozycję całkowicie
         if (item.quantity <= 0) {
             basket = basket.filter(i => i.id !== itemId);
         }
         localStorage.setItem('cart', JSON.stringify(basket));
         renderCart();
 
-        // Aktualizacja licznika w nagłówku, jeśli funkcja istnieje w auth_ui.js
         if (typeof window.updateBasketDOM === "function") window.updateBasketDOM();
     }
 };
 
-// 3. Całkowite usunięcie pojedynczego elementu konfiguracji mebla
 window.removeItemFromBasket = function(itemId) {
     let basket = JSON.parse(localStorage.getItem('cart')) || [];
     basket = basket.filter(i => i.id !== itemId);
@@ -160,31 +150,3 @@ window.clearAllCart = function() {
         if (typeof window.updateBasketDOM === "function") window.updateBasketDOM();
     }
 };
-// 4. PARSOWANIE I FILTROWANIE DANYCH WYŁĄCZNIE DLA SERWERA RUST (FINALIZACJA)
-// function preparePayloadForRustBackend() {
-//     const basket = JSON.parse(localStorage.getItem('cart')) || [];
-//
-//     if (basket.length === 0) {
-//         alert("Koszyk jest pusty!");
-//         return;
-//     }
-//
-//     // MAPOWANIE: Czyścimy dane z frontowych cache'ów ( display.price, display.title itp. ).
-//     // Serwer nie może ufać cenie wysłanej z przeglądarki, bo użytkownik mógłby zmodyfikować HTML/JS.
-//     const rustPayload = basket.map(item => {
-//         return {
-//             name_id: item.name_id,
-//             quantity: item.quantity,
-//             // Przesyłamy surowy obiekt konfiguracji, serwer sam odpyta router/bazę o narzuty cenowe
-//             configuration: item.type === 'configured' ? item.configuration : null
-//         };
-//     });
-//
-//     console.log("=========================================================");
-//     console.log("🚀 PAYLOAD PRZYGOTOWANY DO WYSYŁKI DO API (SERWER RUST):");
-//     console.log("=========================================================");
-//     console.log(JSON.stringify(rustPayload, null, 2));
-//     console.log("=========================================================");
-//
-//     alert("Pomyślnie zrzucono strukturę zamówienia do konsoli dev-tools! Gotowe pod integrację API.");
-// }

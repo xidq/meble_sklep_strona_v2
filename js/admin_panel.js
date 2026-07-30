@@ -184,7 +184,7 @@ async function checkAuth() {
         // Jeśli odpowiedź nie jest OK (np. status 401/403), natychmiast przekierowujemy
         if (!res.ok) {
             console.warn(`Brak autoryzacji. Status: ${res.status}`);
-            window.location.href = "../index.html";
+            window.location.href = "/index.html";
             return;
         }
 
@@ -193,7 +193,7 @@ async function checkAuth() {
         // Weryfikacja ról użytkownika
         if (data.role !== "Admin") {
             console.warn("Użytkownik nie posiada uprawnień Admina.");
-            window.location.href = "../index.html";
+            window.location.href = "/index.html";
             return;
         }
 
@@ -207,7 +207,7 @@ async function checkAuth() {
     } catch (err) {
         // Blok catch obsługuje TERAZ TYLKO prawdziwe błędy (brak sieci, problem z parsowaniem JSON)
         console.error("Błąd sieci lub serwera podczas autoryzacji:", err);
-        window.location.href = "../index.html";
+        window.location.href = "/index.html";
     }
 }
 

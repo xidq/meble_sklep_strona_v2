@@ -314,6 +314,11 @@ function loadGlbModel(glbUrl, modelDetails) {
         setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
 
         applyDefaultTextures();
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                preloadAllTexturesInTheBackground();
+            }, 500); // 500ms opóźnienia daje pewność, że model w pełni "wskoczył" na ekran
+        });
     });
 }
 
@@ -423,7 +428,35 @@ function buildMaterialDropdowns() {
 
     container.appendChild(fragment); // Wstrzykujemy pełen układ tylko 1 raz do DOM (optymalizacja)
 }
+function preloadAllTexturesInTheBackground() {
+    const urlsToLoad = new Set();
 
+    // Zbierz wszystkie adresy URL z tablic tekstur drewna, metalu i szkła
+    [woodTexturesData, metalMaterialsData, glassMaterialsData].forEach(dataSource => {
+        if (!Array.isArray(dataSource)) return;
+        dataSource.forEach(item => {
+            if (item.diffuse) urlsToLoad.add(item.diffuse);
+            if (item.normal) urlsToLoad.add(item.normal);
+            if (item.roughness) urlsToLoad.add(item.roughness);
+            if (item.ambient) urlsToLoad.add(item.ambient);
+        });
+    });
+
+    // Dodaj również teksturę AO modelu, jeśli istnieje
+    if (selectedModelDetails && selectedModelDetails.ao) {
+        urlsToLoad.add(selectedModelDetails.ao);
+    }
+
+    // Pobieraj tekstury asynchronicznie w tle, używając getOrCreateTexture
+    urlsToLoad.forEach(url => {
+        if (!textureCache.has(url)) {
+            // Używamy requestIdleCallback lub setTimeout, aby nie obciążać głównego wątku renderowania
+            window.setTimeout(() => {
+                getOrCreateTexture(url);
+            }, 100);
+        }
+    });
+}
 // ------------------- Cache tekstur -------------------
 function getOrCreateTexture(url) {
     if (!url) return null;

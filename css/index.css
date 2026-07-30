@@ -1,2 +1,105 @@
-.panel { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-#wsSection { display: none; }
+/*.panel { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }*/
+/*#wsSection { display: none; }*/
+
+.hero-section {
+    position: fixed;
+    top: 5rem;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 5rem);
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    z-index: 1;
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 1;
+    transition: background-image 0.5s ease-in-out;
+}
+
+.hero-background {
+    background-image: url('/data/hero/temp_wide.jpg');
+}
+
+@media screen and (orientation: portrait) {
+    .hero-section {
+        top: 5rem;
+        height: calc(100vh - 5rem);
+    }
+    .hero-background {
+        background-image: url('/data/hero/temp_tall.jpg');
+    }
+}
+
+
+.hero-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(20, 20, 20, 0.88);
+    backdrop-filter: blur(8px);
+    z-index: 2;
+    pointer-events: none;
+
+    -webkit-mask-image: radial-gradient(ellipse 180% 180% at 100% 0%, transparent 55%, black 55.1%);
+    mask-image: radial-gradient(ellipse 180% 180% at 100% 0%, transparent 55%, black 55.1%);
+}
+
+
+.hero-content {
+    position: absolute;
+    bottom: 0;
+    z-index: 3;
+    padding: 1rem;
+    max-width: 550px;
+    color: #ffffff;
+    margin-top: auto;
+    margin-bottom: 2rem;
+    margin-left: 2rem;
+    border-radius: 1rem;
+    backdrop-filter: blur(5px);
+
+}
+
+.hero-title {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+    letter-spacing: -1px;
+    color: #ffffff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    animation: type 2s steps(11);
+}
+@keyframes type {from {width: 0}}
+
+.hero-description {
+    font-size: clamp(1rem, 1.5vw, 1.25rem);
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+    text-shadow: 0 1px 5px rgba(0,0,0,0.3);
+}
+
+@media screen and (orientation: portrait) {
+    .hero-mask {
+        /*-webkit-mask-image: radial-gradient(ellipse 150% 150% at 100% 0%, transparent 45%, black 45.1%);*/
+        /*mask-image: radial-gradient(ellipse 150% 150% at 100% 0%, transparent 45%, black 45.1%);*/
+    }
+    .hero-content {
+        margin-left: 1rem;
+        margin-bottom: 3rem;
+        padding: 1.5rem;
+    }
+}
