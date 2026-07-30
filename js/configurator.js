@@ -22,6 +22,7 @@ let defaultMaterials = {
     Metal: null,
     Glass: null
 };
+let activeWoodTextureResolution = "4k";
 
 let activeSelections = {
     Wood: null,
@@ -65,6 +66,8 @@ function calculateConductorF0(n, k) {
     return new BABYLON.Color3(r, g, b);
 }
 
+
+
 document.addEventListener("DOMContentLoaded", () => {
     initBabylon();
     scene.executeWhenReady(() => {
@@ -83,14 +86,18 @@ function initBabylon() {
         bloomKernel: 16,
         motionBlurSamples: 8,
         fxaaEnabled: false,
-        samples: 1
+        samples: 1,
+        tekstury: "2k",
     } : {
         shadowMapSize: 2048,
         bloomKernel: 64,
         motionBlurSamples: 16,
         fxaaEnabled: true,
-        samples: 8
+        samples: 8,
+        tekstury: "2k",
     };
+
+    activeWoodTextureResolution = CONFIG.tekstury;
 
     engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
     scene = new BABYLON.Scene(engine);
@@ -188,7 +195,7 @@ async function startConfigurator() {
         selectedModelDetails = {
             model: modelJson.model,
             ao: modelJson.ao,
-            texture_scale: modelJson.texture_scale || 1.0,
+            texture_scale: modelJson.wood || 1.0,
             basePrice: parseFloat(productData.price) || 0,
             mkw: parseFloat(modelJson.wood ?? productData.wood) || 1.0,
             ilosc_metal: parseFloat(modelJson.metal ?? productData.metal) || 0.0,
@@ -209,7 +216,7 @@ async function startConfigurator() {
     }
 }
 
-// Ładowanie modelu i mapowanie slotów materiałowych
+// Ładowanie modelu i mapowanie slotów materiałowych (Zoptymalizowane pod kątem braku zwiechy)
 function loadGlbModel(glbUrl, modelDetails) {
     const lastSlash = glbUrl.lastIndexOf('/');
     const rootPath = glbUrl.substring(0, lastSlash + 1);
@@ -260,8 +267,6 @@ function loadGlbModel(glbUrl, modelDetails) {
             shadowGenerator.addShadowCaster(mesh);
             mesh.receiveShadows = true;
 
-            // console.log('Mesh:', mesh.name, 'Material:', mesh.material?.name);
-
             if (mesh.material) {
                 const matName = mesh.material.name ? mesh.material.name.toLowerCase() : "";
                 const objName = mesh.name ? mesh.name.toLowerCase() : "";
@@ -279,45 +284,44 @@ function loadGlbModel(glbUrl, modelDetails) {
 
                 if (typeKey) {
                     meshesByType[typeKey].push(mesh);
-                    if (!defaultMaterials[typeKey]) {
-                        defaultMaterials[typeKey] = mesh.material.clone(mesh.material.name + "_default");
-                    }
-                }
-
-                if (modelDetails.ao && mesh.material && mesh.material instanceof BABYLON.PBRMaterial) {
-                    const aoTex = new BABYLON.Texture(modelDetails.ao, scene);
-                    aoTex.invertY = false;
-                    mesh.material.ambientTexture = aoTex;
                 }
             }
         });
 
+        // Przypisanie referencji BEZ natychmiastowego klonowania (eliminacja zwiechy)
         ['Wood', 'Metal', 'Glass'].forEach(type => {
             if (meshesByType[type].length === 0) return;
 
             const firstMat = meshesByType[type][0].material;
             if (!firstMat) return;
 
-            pristineMaterials[type] = firstMat.clone(firstMat.name + "_pristine");
-            activeMaterials[type] = firstMat.clone(firstMat.name + "_active");
-
-            meshesByType[type].forEach(m => m.material = activeMaterials[type]);
+            // Używamy materiału bezpośrednio z GLB jako aktywnego na starcie
+            activeMaterials[type] = firstMat;
 
             if (modelDetails.ao && activeMaterials[type] instanceof BABYLON.PBRMaterial) {
                 const aoTex = getOrCreateTexture(modelDetails.ao);
                 aoTex.invertY = false;
                 activeMaterials[type].ambientTexture = aoTex;
             }
+
+            // Klonowanie do celów przywracania domyślnego robimy w tle poźniej
+            setTimeout(() => {
+                if (firstMat && !pristineMaterials[type]) {
+                    pristineMaterials[type] = firstMat.clone(firstMat.name + "_pristine");
+                }
+            }, 2000);
         });
 
+        // Błyskawiczne zdjęcie overlaya – model renderuje się natychmiast z mockupem
         document.getElementById('loading-overlay').style.opacity = '0';
         setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
 
         applyDefaultTextures();
+
         requestAnimationFrame(() => {
             setTimeout(() => {
                 preloadAllTexturesInTheBackground();
-            }, 500); // 500ms opóźnienia daje pewność, że model w pełni "wskoczył" na ekran
+            }, 500);
         });
     });
 }
@@ -327,7 +331,6 @@ function buildMaterialDropdowns() {
     const container = document.getElementById('dynamic-slots');
     container.innerHTML = '';
 
-    // Optymalizacja budowania widoku: Użycie DocumentFragment, by wstrzykiwać do DOM tylko 1 raz
     const fragment = document.createDocumentFragment();
 
     const materialSlots = [
@@ -382,7 +385,7 @@ function buildMaterialDropdowns() {
                 if (chosenItem) {
                     activeSelections[slot.id] = chosenItem;
                     if (slot.isDds) {
-                        applyDdsTextureToType(slot.id, chosenItem);
+                        applyMockupTextureOnly(slot.id, chosenItem);
                         if (activeSelections["Metal"] === "NO_METAL") {
                             applyWoodTextureToMetalElements();
                         }
@@ -426,12 +429,39 @@ function buildMaterialDropdowns() {
     cartBtn.addEventListener('click', addConfiguredProductToCart);
     fragment.appendChild(cartBtn);
 
-    container.appendChild(fragment); // Wstrzykujemy pełen układ tylko 1 raz do DOM (optymalizacja)
+    container.appendChild(fragment);
 }
+
+function applyMockupTextureOnly(typeId, textureItem) {
+    const mat = activeMaterials[typeId];
+    if (!mat) return;
+
+    mat.metallic = 0;
+    mat.roughness = 1;
+    mat.albedoColor = new BABYLON.Color3(1, 1, 1);
+    mat.metallicTexture = null;
+
+    if (textureItem.diffuse_mockup) {
+        mat.albedoTexture = getOrCreateTexture(textureItem.diffuse_mockup);
+    } else {
+        const is2k = (activeWoodTextureResolution === "2k");
+        mat.albedoTexture = getOrCreateTexture(is2k ? (textureItem.diffuse_2k || textureItem.diffuse) : textureItem.diffuse);
+    }
+
+    mat.bumpTexture = null;
+    mat.roughnessTexture = null;
+    mat.useNormalMapWithAccessors = false;
+
+    if (typeId === "Wood" && activeSelections["Metal"] === "NO_METAL") {
+        applyWoodTextureToMetalElements();
+    }
+
+    calculateFinalPrice();
+}
+
 function preloadAllTexturesInTheBackground() {
     const urlsToLoad = new Set();
 
-    // Zbierz wszystkie adresy URL z tablic tekstur drewna, metalu i szkła
     [woodTexturesData, metalMaterialsData, glassMaterialsData].forEach(dataSource => {
         if (!Array.isArray(dataSource)) return;
         dataSource.forEach(item => {
@@ -442,35 +472,56 @@ function preloadAllTexturesInTheBackground() {
         });
     });
 
-    // Dodaj również teksturę AO modelu, jeśli istnieje
     if (selectedModelDetails && selectedModelDetails.ao) {
         urlsToLoad.add(selectedModelDetails.ao);
     }
 
-    // Pobieraj tekstury asynchronicznie w tle, używając getOrCreateTexture
     urlsToLoad.forEach(url => {
         if (!textureCache.has(url)) {
-            // Używamy requestIdleCallback lub setTimeout, aby nie obciążać głównego wątku renderowania
             window.setTimeout(() => {
                 getOrCreateTexture(url);
             }, 100);
         }
     });
 }
-// ------------------- Cache tekstur -------------------
+
+//  Cache tekstur 
 function getOrCreateTexture(url) {
-    if (!url) return null;
+    if (!url || typeof url !== 'string') return null;
+    const is2k = (activeWoodTextureResolution === "2k");
+    let targetUrl = url;
+
+    for (const item of woodTexturesData) {
+        if (item.diffuse === url || item.diffuse_2k === url) {
+            targetUrl = is2k ? (item.diffuse_2k || item.diffuse) : item.diffuse;
+            break;
+        }
+        if (item.normal === url || item.normal_2k === url) {
+            targetUrl = is2k ? (item.normal_2k || item.normal) : item.normal;
+            break;
+        }
+        if (item.roughness === url || item.roughness_2k === url) {
+            targetUrl = is2k ? (item.roughness_2k || item.roughness) : item.roughness;
+            break;
+        }
+        if (item.diffuse_mockup === url) {
+            targetUrl = item.diffuse_mockup;
+            break;
+        }
+    }
+
     if (textureCache.has(url)) return textureCache.get(url);
 
-    const tex = new BABYLON.Texture(url, scene, false, false, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
+    const tex = new BABYLON.Texture(targetUrl, scene, false, false, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
     tex.anisotropicFilteringLevel = 8;
-    tex.uScale = 1.0;
-    tex.vScale = 1.0;
+    const textureScale = (selectedModelDetails && selectedModelDetails.texture_scale) ? selectedModelDetails.texture_scale : 1.0;
+    tex.uScale = textureScale;
+    tex.vScale = textureScale;
     textureCache.set(url, tex);
     return tex;
 }
 
-// ------------------- Pomocnicza funkcja kopiująca podstawowe właściwości PBR (do przywracania) -------------------
+// Pomocnicza funkcja kopiująca podstawowe właściwości PBR (do przywracania)
 function copyPBRProperties(source, target) {
     target.albedoColor = source.albedoColor.clone();
     target.metallic = source.metallic;
@@ -486,7 +537,7 @@ function copyPBRProperties(source, target) {
     target.ambientTexture = source.ambientTexture;
 }
 
-// ------------------- Przywracanie domyślnego materiału -------------------
+// Przywracanie domyślnego materiału
 function restoreDefaultMaterial(typeId) {
     if (!pristineMaterials[typeId] || !activeMaterials[typeId]) return;
 
@@ -494,7 +545,7 @@ function restoreDefaultMaterial(typeId) {
     calculateFinalPrice();
 }
 
-// ------------------- Nakładanie tekstur drewna na metal (NO_METAL) -------------------
+// Nakładanie tekstur drewna na metal (NO_METAL)
 function applyWoodTextureToMetalElements() {
     const currentWood = activeSelections["Wood"];
     if (!currentWood || !activeMaterials.Metal) return;
@@ -514,29 +565,7 @@ function applyWoodTextureToMetalElements() {
     calculateFinalPrice();
 }
 
-// ------------------- Aplikacja tekstur DDS (drewno) -------------------
-function applyDdsTextureToType(typeId, textureItem) {
-    const mat = activeMaterials[typeId];
-    if (!mat) return;
-
-    mat.metallic = 0;
-    mat.roughness = 1;
-    mat.albedoColor = new BABYLON.Color3(1, 1, 1);
-    mat.metallicTexture = null;
-
-    mat.albedoTexture = getOrCreateTexture(textureItem.diffuse);
-    mat.bumpTexture = getOrCreateTexture(textureItem.normal);
-    mat.roughnessTexture = getOrCreateTexture(textureItem.roughness);
-    mat.useNormalMapWithAccessors = true;
-
-    if (typeId === "Wood" && activeSelections["Metal"] === "NO_METAL") {
-        applyWoodTextureToMetalElements();
-    }
-
-    calculateFinalPrice();
-}
-
-// ------------------- Aplikacja właściwości PBR (metal, szkło) -------------------
+// Aplikacja właściwości PBR (metal, szkło)
 function applyPbrPropertiesToType(typeId, materialItem) {
     const mat = activeMaterials[typeId];
     if (!mat) return;
@@ -598,10 +627,10 @@ function applyPbrPropertiesToType(typeId, materialItem) {
     calculateFinalPrice();
 }
 
-// ------------------- Inicjalne tekstury -------------------
+//  Inicjalne tekstury 
 function applyDefaultTextures() {
     if (activeSelections.Wood) {
-        applyDdsTextureToType("Wood", activeSelections.Wood);
+        applyMockupTextureOnly("Wood", activeSelections.Wood);
     }
     if (activeSelections.Metal && activeSelections.Metal !== "NO_METAL") {
         applyPbrPropertiesToType("Metal", activeSelections.Metal);
@@ -641,7 +670,7 @@ function calculateFinalPrice() {
     document.getElementById('price-value').innerText = finalPrice.toFixed(2);
 }
 
-// ------------------- Dodawanie skonfigurowanego mebla do koszyka -------------------
+// Dodawanie skonfigurowanego mebla do koszyka
 function addConfiguredProductToCart() {
     if (!selectedModelDetails) return;
 
