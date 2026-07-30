@@ -1,6 +1,5 @@
 package main
 
-// main.go
 import (
 	"context"
 	"crypto/tls"
@@ -16,12 +15,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	//     "regexp"
 )
 
-//	var upgrader = websocket.Upgrader{
-//	    CheckOrigin: func(r *http.Request) bool { return true },
-//	}
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
@@ -36,7 +31,6 @@ func main() {
 	if os.Getenv("JWT_SECRET_KEY") == "" {
 		log.Fatal("JWT_SECRET_KEY must be set in .env – required for JWT verification")
 	}
-	//ws
 	wwwMux := http.NewServeMux()
 
 	apiProxy := httputil.NewSingleHostReverseProxy(&url.URL{
@@ -60,7 +54,7 @@ func main() {
 		// Blokada wyświetlania katalogów
 		path := strings.TrimPrefix(r.URL.Path, "/css/")
 		if path == "" || strings.HasSuffix(path, "/") {
-			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
+			serveErrorPage(w, r, http.StatusForbidden, "Access denied", "Nie masz uprawnień do przeglądania tego katalogu.")
 			return
 		}
 		// Serwuje plik z bezpieczeństwem, cache i gzip
@@ -72,7 +66,7 @@ func main() {
 	wwwMux.Handle("/js/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/js/")
 		if path == "" || strings.HasSuffix(path, "/") {
-			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
+			serveErrorPage(w, r, http.StatusForbidden, "Access denied", "Nie masz uprawnień do przeglądania tego katalogu.")
 			return
 		}
 		handler := securityHeaders(cacheMiddleware(gzipMiddleware(
@@ -85,7 +79,7 @@ func main() {
 		path := strings.TrimPrefix(r.URL.Path, "/data/")
 
 		if path == "" || strings.HasSuffix(path, "/") {
-			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nie masz uprawnień do przeglądania tego katalogu.")
+			serveErrorPage(w, r, http.StatusForbidden, "Access denied", "Nie masz uprawnień do przeglądania tego katalogu.")
 			return
 		}
 
@@ -96,7 +90,7 @@ func main() {
 		// check czy ścieżka znajduje się wewnątrz DataDir
 		dataDirClean := filepath.Clean(config.DataDir)
 		if !strings.HasPrefix(cleanPath, dataDirClean+string(os.PathSeparator)) && cleanPath != dataDirClean {
-			serveErrorPage(w, r, http.StatusForbidden, "Dostęp zabroniony", "Nieprawidłowa ścieżka.")
+			serveErrorPage(w, r, http.StatusForbidden, "Access denied", "Nieprawidłowa ścieżka.")
 			return
 		}
 		info, err := os.Stat(fullPath)

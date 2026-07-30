@@ -1,3 +1,17 @@
+const ORDER_STATUS_MAP = {
+    'ZamowieniePrzyjete': { label: 'Zamówienie przyjęte', color: '#6c757d', bg: '#e9ecef' },
+    'Wprzygotowaniu': { label: 'W realizacji', color: '#0056b3', bg: '#cce5ff' },
+    'OczekujeNaWysylke': { label: 'Oczekuje na wysyłkę', color: '#004085', bg: '#b8daff' },
+    'Wpodrozy': { label: 'W podróży', color: '#155724', bg: '#d4edda' },
+    'Dostarczone': { label: 'Dostarczone', color: '#721c24', bg: '#f8d7da' }
+};
+const PAYMENT_STATUS_MAP = {
+    'Nieoplacone': { label: 'Oczekuje na płatność', color: '#856404', bg: '#fff3cd' },
+    'Oplacone': { label: 'Opłacone', color: '#155724', bg: '#d4edda' },
+    'Zwrocone': { label: 'Zwrócono środki', color: '#383d41', bg: '#e2e3e5' },
+    'Czesciowo': { label: 'Opłacone częściowo', color: '#721c24', bg: '#f8d7da' }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     renderTabs();
     loadDashboard().catch(console.error);
@@ -41,7 +55,6 @@ async function fetchAndParse(url) {
     }
 }
 
-// NAPRAWIONE: Dashboard teraz wyświetla 'name' zgodnie ze strukturą w Ruście
 async function loadDashboard() {
     try {
         const user = await fetchAndParse('/api/usr/self/data');
@@ -68,7 +81,8 @@ async function loadOrders() {
             ${orders.map(o => `
                 <div style="border:1px solid #ccc; margin:10px; padding:10px;">
                     <p><strong>FV:</strong> ${o.numer_fv} | <strong>Data:</strong> ${o.date}</p>
-                    <p><strong>Status:</strong> ${o.oplacone ? 'Opłacone' : 'Czeka na płatność'}</p>
+                    <p><strong>Status płatności:</strong> ${PAYMENT_STATUS_MAP[o.oplacone]?.label || o.oplacone}</p>
+                    <p><strong>Status dostawy:</strong> ${ORDER_STATUS_MAP[o.status]?.label || o.status}</p>
                     <p><strong>Kwota:</strong> ${o.cena.toFixed(2)} PLN</p>
                 </div>
             `).join('')}
@@ -103,7 +117,7 @@ async function loadSettings() {
             </div>
         `;
 
-        // Podpięcie zdarzeń do nowych przycisków
+
         document.getElementById('btnSave').addEventListener('click', saveSettings);
         document.getElementById('btnDownload').addEventListener('click', downloadUserData);
 

@@ -78,22 +78,23 @@ document.getElementById('p_uploadImageBtn').addEventListener('click', async () =
       body: formData // Przeglądarka sama ustawi nagłówek Content-Type wraz z boundary, nie wpisuj go ręcznie!
     });
 
-    if (!response.ok) {
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Serwer przyjął pliki:", data);
+      alert("Zdjęcia zostały pomyślnie przesłane na serwer!");
+      fileInput.value = "";
+    } else {
+      // Zamiast throw – bezpośrednia obsługa błędu
       const errorText = await response.text();
-      throw new Error(errorText || `Status serwera: ${response.status}`);
+      alert(`Błąd serwera (${response.status}): ${errorText || 'Brak szczegółów'}`);
     }
 
-    const data = await response.json();
-    console.log("Serwer przyjął pliki:", data);
-
-    // Sukces – informujemy użytkownika
-    alert("Zdjęcia zostały pomyślnie przesłane na serwer! Przetwarzanie i konwersja AVIF trwają w tle.");
-    fileInput.value = ""; // Czyszczenie inputu po sukcesie
-
   } catch (error) {
-    console.error("Błąd przesyłania:", error);
-    alert(`Wystąpił błąd podczas przesyłania: ${error.message}`);
+    // Catch przechwytuje teraz TYLKO błędy sieciowe/techniczne (brak połączenia itp.)
+    console.error("Błąd połączenia/sieci:", error);
+    alert(`Wystąpił błąd sieci: ${error.message}`);
   }
+
 });
 document.getElementById('uploadImageBtn').addEventListener('click', async () => {
   const fileInput = document.getElementById('imageInput');
@@ -155,12 +156,16 @@ document.getElementById('uploadImageBtn').addEventListener('click', async () => 
       if (response.ok) {
         successCount++;
       } else {
+        // Wyciągamy treść i przechodzimy do bloku catch lub obsługujemy lokalnie
         const errorText = await response.text();
-        throw new Error(errorText);
+        statusDiv.style.color = "red";
+        statusDiv.innerHTML += `Błąd wysyłania pliku "${file.name}": ${errorText || response.statusText}<br>`;
+        failCount++;
       }
     } catch (error) {
+      // Blok catch obsłuży wyłącznie awarię sieci
       statusDiv.style.color = "red";
-      statusDiv.innerHTML += `Błąd wysyłania pliku "${file.name}": ${error.message}<br>`;
+      statusDiv.innerHTML += `Błąd połączenia dla "${file.name}": ${error.message}<br>`;
       failCount++;
     }
   }

@@ -20,7 +20,6 @@ const translations = {
         spec_width: "Szerokość:",
         spec_depth: "Głębokość:",
         spec_price: "Cena:",
-        // spec_name: "Nazwa:",
     },
     en: {
         welcome: "logo",
@@ -42,7 +41,6 @@ const translations = {
         spec_width: "Width:",
         spec_depth: "Depth:",
         spec_price: "Price:",
-        // spec_name: "Name:",
     }
 };
 
@@ -56,7 +54,6 @@ function setLanguage(lang) {
         }
     });
 
-    // NOWOŚĆ: Dynamiczne tłumaczenie tytułów produktów w galerii
     const productTitles = document.querySelectorAll('.product-title');
     productTitles.forEach(t => {
         const namePL = t.getAttribute('data-name-pl');
@@ -64,7 +61,6 @@ function setLanguage(lang) {
         t.innerText = (lang === 'en' && nameEN) ? nameEN : (namePL || 'Brak nazwy');
     });
 
-    // Istniejące już u Ciebie tłumaczenie opisów
     const productDescriptions = document.querySelectorAll('.product-description');
     productDescriptions.forEach(p => {
         const textPL = p.getAttribute('data-desc-pl');
@@ -74,22 +70,19 @@ function setLanguage(lang) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // ZABEZPIECZENIE: Sprawdzamy czy element istnieje przed dodaniem eventu
-    const switcher = document.getElementById('language-switcher');
+    const switcher = document.getElementById('language_switcher');
 
     if (switcher) {
-        // Obsługa zmiany w select
         switcher.addEventListener('change', (e) => {
             const lang = e.target.value;
             setLanguage(lang);
             localStorage.setItem('user-lang', lang);
         });
 
-        // Ustawienie wartości przy ładowaniu
         const savedLang = localStorage.getItem('user-lang') || 'pl';
         switcher.value = savedLang;
         setLanguage(savedLang);
     } else {
-        console.warn("Element 'language-switcher' nie został znaleziony. Skrypt działa, ale bez obsługi zmiany języka.");
+        console.warn("Element 'language_switcher' nie został znaleziony. Skrypt działa, ale bez obsługi zmiany języka.");
     }
 });
