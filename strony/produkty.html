@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/css/header.css">
     <link rel="stylesheet" href="/css/gallery.css">
     <link rel="stylesheet" href="/css/text.css">
+    <script src="/js/auth_ui.js" defer></script>
+    <script src="/js/lang.js" defer></script>
 </head>
 <body>
 <div class="gallery-container" id="MAIN">
@@ -17,38 +19,9 @@
 <script>
     const grid = document.getElementById('galleryGrid');
 
-    // Funkcja renderująca pojedynczy element
-    function renderItem(id, apiProduct, imgData) {
-        const itemAnchor = document.createElement('a');
-        itemAnchor.href = `item.html?id=${id}`;
-        itemAnchor.className = 'gallery-item glow';
-
-        // Wyciągamy rozdzielczości dla wariantu pierwszego (var_1)
-        const p256 = imgData.var_1["256"];
-        const p512 = imgData.var_1["512"];
-
-        // Początkowa nazwa (dla atrybutu alt i szybkiego renderu)
-        const currentLang = localStorage.getItem('user-lang') || 'pl';
-        const initialName = currentLang === 'en' ? apiProduct.name_en : apiProduct.name_pl;
-
-        // Dodajemy klasę 'product-title' oraz atrybuty data-name-*
-        itemAnchor.innerHTML = `
-            <img
-                src="${p256}"
-                srcset="${p256} 256w, ${p512} 512w"
-                sizes="(min-width: 2000px) 512px, 256px"
-                alt="${initialName}"
-                loading="lazy"
-            >
-            <div class="overlay product-title" data-name-pl="${apiProduct.name_pl}" data-name-en="${apiProduct.name_en}">${initialName}</div>
-        `;
-
-        grid.appendChild(itemAnchor);
-    }
-
-    // Główna funkcja ładowania galerii
     async function loadGallery() {
         try {
+            // 1. Równoległe pobranie routera i API produktów
             const [routerResponse, apiProductsResponse] = await Promise.all([
                 fetch('/data/router.json'),
                 fetch('/api/products')
@@ -57,49 +30,66 @@
             if (!routerResponse.ok) throw new Error('Błąd routera: ' + routerResponse.statusText);
             if (!apiProductsResponse.ok) throw new Error('Błąd API produktów: ' + apiProductsResponse.statusText);
 
-            const routerData = await routerResponse.json();
-            const apiProductsData = await apiProductsResponse.json();
+            const [routerData, apiProductsData] = await Promise.all([
+                routerResponse.json(),
+                apiProductsResponse.json()
+            ]);
 
-            const productsMap = new Map();
-            apiProductsData.forEach(prod => {
-                productsMap.set(prod.name_id, prod);
-            });
+            const productsMap = new Map(apiProductsData.map(prod => [prod.name_id, prod]));
+            const currentLang = localStorage.getItem('user-lang') || 'pl';
 
-            const promises = routerData.map(async (item) => {
+            // 2. Pobranie danych obrazków w tle z zachowaniem struktury
+            const itemsData = await Promise.all(routerData.map(async (item) => {
+                const apiProduct = productsMap.get(item.id);
+                if (!apiProduct || !item.img) return null;
+
                 try {
-                    const apiProduct = productsMap.get(item.id);
-
-                    if (!apiProduct) {
-                        console.warn(`Brak danych bazodanowych dla elementu z routera: ${item.id}`);
-                        return;
-                    }
-
-                    if (!item.img) {
-                        console.warn(`Brak pliku zdjęć dla: ${item.id}`);
-                        return;
-                    }
-
                     const resImg = await fetch('/' + item.img);
-                    if (!resImg.ok) {
-                        throw new Error(`Nie udało się pobrać pliku zdjęć dla ${item.id}`);
-                    }
-
+                    if (!resImg.ok) return null;
                     const imgData = await resImg.json();
-
-                    // Przekazujemy CAŁY obiekt apiProduct zamiast jednego stringa
-                    renderItem(item.id, apiProduct, imgData);
-                } catch (itemError) {
-                    console.error(`Błąd ładowania elementu ${item.id}:`, itemError);
+                    return { item, apiProduct, imgData };
+                } catch (err) {
+                    console.error(`Błąd ładowania obrazka dla ${item.id}:`, err);
+                    return null;
                 }
+            }));
+
+            // 3. Renderowanie hurtowe za pomocą DocumentFragment (Single DOM Mutation)
+            const fragment = document.createDocumentFragment();
+
+            itemsData.forEach(data => {
+                if (!data) return;
+                const { item, apiProduct, imgData } = data;
+
+                const itemAnchor = document.createElement('a');
+                itemAnchor.href = `item.html?id=${item.id}`;
+                itemAnchor.className = 'gallery-item glow';
+
+                const p256 = imgData.var_1["256"];
+                const p512 = imgData.var_1["512"];
+                const initialName = currentLang === 'en' ? apiProduct.name_en : apiProduct.name_pl;
+
+                itemAnchor.innerHTML = `
+                    <img
+                        src="${p256}"
+                        srcset="${p256} 256w, ${p512} 512w"
+                        sizes="(min-width: 2000px) 512px, 256px"
+                        alt="${initialName}"
+                        loading="lazy"
+                        decoding="async"
+                    >
+                    <div class="overlay product-title" data-name-pl="${apiProduct.name_pl}" data-name-en="${apiProduct.name_en}">${initialName}</div>
+                `;
+
+                fragment.appendChild(itemAnchor);
             });
 
-            // Czekamy na wygenerowanie HTML dla wszystkich kart
-            await Promise.all(promises);
+            // Wstawiamy cały fragment do DOM jednorazowo
+            grid.appendChild(fragment);
 
-            // Wymuszamy aktualizację języków dla nowo wyrenderowanych elementów galerii
-            const savedLang = localStorage.getItem('user-lang') || 'pl';
+            // Podpięcie tłumaczeń
             if (typeof setLanguage === 'function') {
-                setLanguage(savedLang);
+                setLanguage(currentLang);
             }
 
         } catch (error) {
@@ -108,45 +98,37 @@
         }
     }
 
-    // Odpalamy ładowanie
     loadGallery();
+</script>
 </script>
 <script>
     window.addEventListener("wheel", function (e) {
-        // Sprawdzamy czy ekran jest w orientacji poziomej (landscape)
         const isLandscape = window.matchMedia("(orientation: landscape)").matches;
 
         if (!isLandscape) {
-            // Jeśli to pionowy ekran (portrait), pozwól na standardowy scroll
             return;
         }
 
-        // Blokujemy domyślny ruch tylko w poziomie
         e.preventDefault();
 
-        // Używamy mniejszego mnożnika lub bezpośredniej wartości deltaY, żeby nie skakało za szybko
         const scrollAmount = e.deltaY;
 
         window.scrollBy({
             left: scrollAmount,
-            behavior: 'auto' // 'auto' zamiast 'smooth' likwiduje szarpanie przy szybkim kręceniu
+            behavior: 'auto' // 'auto' zamiast 'smooth' żeby nie szarpało
         });
     }, { passive: false });
 </script>
-<script>
-    // window.addEventListener("scroll", function () {
-    //     if (window.scrollX !== 0) {
-    //         console.log("Globalny scroll poziomy:", window.scrollX);
-    //     }
-    // }, true);
-    var item = document.getElementById("MAIN");
-
-    item.addEventListener("scroll", function (e) {
-        // Sprawdzamy czy zdarzenie dotyczy bezpośrednio naszego elementu lub jego wnętrza
-        console.log("Przesuwanie konkretnego elementu:", item.scrollLeft);
-    }, { capture: true });
-</script>
+<!--<script>-->
+<!--    -->
+<!--    // sprawdzanie scrolla-->
+<!--    -->
+<!--    var item = document.getElementById("MAIN");-->
+<!--    item.addEventListener("scroll", function (e) {-->
+<!--        console.log("Przesuwanie konkretnego elementu:", item.scrollLeft);-->
+<!--    }, { capture: true });-->
+<!--</script>-->
 </body>
-<script src="/js/auth_ui.js"></script>
-<script src="/js/lang.js"></script>
+<!--<script src="/js/auth_ui.js"></script>-->
+<!--<script src="/js/lang.js"></script>-->
 </html>
