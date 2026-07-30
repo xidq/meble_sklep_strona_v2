@@ -7,23 +7,21 @@
   <link rel="stylesheet" href="../css/header.css">
   <link rel="stylesheet" href="../css/text.css">
   <style>
-    /* Główny kontener dzielący stronę na Dane (lewo) i Podsumowanie (prawo) */
     .checkout-container {
       max-width: 1100px;
       margin: 30px auto;
       padding: 0 20px;
       font-family: sans-serif;
       display: grid;
-      grid-template-columns: 1fr 380px; /* Lewa kolumna elastyczna, prawa stała 380px */
-      gap: 40px; /* Odstęp między kolumnami */
+      grid-template-columns: 1fr 380px;
+      gap: 40px;
     }
 
-    /* Usunięcie domyślnych marginesów z form, bo kontener nim steruje */
     #checkout-form {
       margin: 0;
     }
 
-    /* Sekcje nagłówków */
+
     h3 {
       margin-top: 25px;
       margin-bottom: 15px;
@@ -35,7 +33,6 @@
       margin-top: 0;
     }
 
-    /* Pojedynczy wiersz: napis obok pola */
     .form-group {
       display: flex;
       align-items: center;
@@ -43,7 +40,7 @@
     }
 
     .form-group label {
-      width: 140px; /* Stała szerokość opisu */
+      width: 140px;
       font-weight: bold;
       font-size: 14px;
       color: #333;
@@ -65,14 +62,12 @@
       border-color: #4a5568;
     }
 
-    /* Klasa do rozbijania sekcji faktury na 2 kolumny */
     .form-grid-2col {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 15px;
     }
 
-    /* Wewnątrz siatki dwukolumnowej zmieniamy układ na pionowy, żeby było czytelnie */
     .form-grid-2col .form-group {
       display: flex;
       flex-direction: column;
@@ -89,7 +84,6 @@
       width: 100%;
     }
 
-    /* Stylizacja checkboxa */
     .checkbox-group {
       display: flex;
       align-items: center;
@@ -101,7 +95,6 @@
       margin-right: 10px;
     }
 
-    /* Prawa kolumna: Podsumowanie (zablokowane na górze przy przewijaniu strony) */
     .summary-column {
       position: sticky;
       top: 20px;
@@ -145,12 +138,10 @@
       display: none;
     }
 
-    /* W przypadku układu pionowego (np. w fakturze) komunikat ląduje na dole */
     .form-grid-2col .error-message {
       order: 3;
     }
 
-    /* RWD: Na telefonach ułóż wszystko w jedną kolumnę */
     @media (max-width: 768px) {
       .checkout-container {
         grid-template-columns: 1fr;
@@ -161,7 +152,7 @@
       }
       .summary-column {
         position: static;
-        order: -1; /* Podsumowanie wskakuje na górę na telefonach */
+        order: -1;
       }
     }
   </style>
@@ -216,7 +207,7 @@
       <input type="checkbox" id="wants-invoice" /> Chcę otrzymać fakturę VAT
     </label>
 
-    <!-- SEKCJA FAKTURY (Dwie kolumny dzięki klasie form-grid-2col) -->
+    <!-- SEKCJA FAKTURY (Dwie kolumny) -->
     <div id="invoice-fields-section" style="display: none; margin-top: 15px; padding-left: 15px; border-left: 3px solid #cbd5e0;">
       <h3>Dane do faktury</h3>
 
@@ -242,7 +233,6 @@
         </div>
 
         <div class="form-group" style="grid-column: span 2;">
-          <!-- Kod pocztowy rozciągamy na całą szerokość sekcji FV dla ładnego domknięcia -->
           <label for="invoice-zip">Kod pocztowy (firma):</label>
           <input type="text" id="invoice-zip" placeholder="00-000" style="max-width: calc(50% - 8px);" />
         </div>
@@ -250,7 +240,7 @@
     </div>
   </form>
 
-  <!-- PRAWA KOLUMNA: PODSUMOWANIE KOSZYKA -->
+  <!-- PRAWA KOLUMNA PODSUMOWANIE KOSZYKA -->
   <div class="summary-column">
     <div class="summary-box">
       <h3>Podsumowanie zamówienia</h3>

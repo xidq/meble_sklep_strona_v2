@@ -1,12 +1,9 @@
-// =========================================================================
-// finalizacja.js - OBSŁUGA FORMULARZA I WYSYŁKA ZAMÓWIENIA DO RUST API
-// =========================================================================
 async function fetchUserData() {
     try {
         const response = await fetch('/api/usr/data', {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`, // Zakładam, że tu przechowujesz token
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
                 'Content-Type': 'application/json'
             }
         });
@@ -23,17 +20,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupInvoiceToggle();
     setupLiveValidation();
     setupInputRestrictions();
-
-    // Nowa logika: automatyczne uzupełnianie
+    // autofill
     const userData = await fetchUserData();
     if (userData) {
         const emailInput = document.getElementById('customer-email');
         const nameInput = document.getElementById('customer-name');
-        // const surnameInput = document.getElementById('customer-surname'); // Odkomentuj jak wdrożysz
+        // const surnameInput = document.getElementById('customer-surname'); // jak ogarne nazwisko odkomentować
 
         if (emailInput && userData.email) emailInput.value = userData.email;
         if (nameInput && userData.username) nameInput.value = userData.username;
-        // if (surnameInput && userData.surname) surnameInput.value = userData.surname;
+        // if (surnameInput && userData.surname) surnameInput.value = userData.surname; //to etż
 
         // Opcjonalnie: zapis ID użytkownika do form
         document.getElementById('checkout-form').setAttribute('data-user-id', userData.id || '');
@@ -43,30 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (checkoutBtn) checkoutBtn.addEventListener('click', handleOrderSubmission);
 });
 
-// 1. Sprawdzanie czy użytkownik jest zalogowany (wstrzykiwanie danych do formularza)
-// function checkUserAuthStatus() {
-//     // Zakładam, że Twoje auth_ui.js zapisuje dane o zalogowanym użytkowniku w localStorage lub sesji
-//     const currentUser = JSON.parse(localStorage.getItem('user')) || null;
-//
-//     const emailInput = document.getElementById('customer-email');
-//     const nameInput = document.getElementById('customer-name');
-//     const surnameInput = document.getElementById('customer-surname');
-//
-//     if (currentUser) {
-//         // Jeśli jest zalogowany, blokujemy pola lub uzupełniamy automatycznie
-//         if (emailInput && currentUser.email) {
-//             emailInput.value = currentUser.email;
-//             emailInput.disabled = true; // Zalogowany nie musi (i nie powinien) zmieniać maila zamówienia
-//         }
-//         if (nameInput && currentUser.firstName) nameInput.value = currentUser.firstName;
-//         if (surnameInput && currentUser.lastName) surnameInput.value = currentUser.lastName;
-//
-//         // Zapisujemy ID użytkownika w ukrytym polu, aby łatwo go wyciągnąć
-//         document.getElementById('checkout-form').setAttribute('data-user-id', currentUser.id || '');
-//     }
-// }
-
-/// 2. Obsługa pokazywania/ukrywania pól faktury przez Checkbox
+/// Obsługa pokazywania/ukrywania pól faktury przez Checkbox
 function setupInvoiceToggle() {
     const invoiceCheckbox = document.getElementById('wants-invoice');
     const invoiceSection = document.getElementById('invoice-fields-section');
@@ -85,7 +58,7 @@ function setupInvoiceToggle() {
     }
 }
 
-// 3. Renderowanie uproszczonego podsumowania koszyka na stronie finalizacji
+// Renderowanie uproszczonego podsumowania koszyka na stronie finalizacji
 function renderCartSummary() {
     const summaryContainer = document.getElementById('cart-summary-list');
     const totalContainer = document.getElementById('cart-summary-total');
@@ -118,7 +91,7 @@ function renderCartSummary() {
     if (totalContainer) totalContainer.innerText = `${total.toFixed(2)} zł`;
 }
 
-// --- FUNKCJE SILNIKA WALIDACJI (ZASADA: BŁĄD BEZPOŚREDNIO POD INPUTEM) ---
+// FUNKCJE SILNIKA WALIDACJI (ZASADA: BŁĄD BEZPOŚREDNIO POD INPUTEM)
 
 // Słownik reguł walidacyjnych dla konkretnych ID
 const validationRules = {
@@ -183,10 +156,6 @@ function showFieldError(inputId, message) {
 
     input.classList.add('input-error');
 
-    // Nadajemy rodzicowi pozycję relatywną, aby błąd pozycjonował się względem niego
-    // if (input.parentNode) {
-    //     input.parentNode.style.position = 'relative';
-    // }
     if (input.parentElement) {
         input.parentElement.style.position = 'relative';
     }
@@ -197,7 +166,7 @@ function showFieldError(inputId, message) {
         errorDiv = document.createElement('div');
         errorDiv.className = 'field-error-message';
 
-        // STYLOWANIE ABSOLUTNE - zapobiega kurczeniu się inputów
+        // STYLOWANIE ABSOLUTNE - na skurcze
         errorDiv.style.position = 'absolute';
         errorDiv.style.left = '0';
         errorDiv.style.bottom = '-18px'; // Wypycha błąd dokładnie pod dolną krawędź inputa
@@ -212,8 +181,7 @@ function showFieldError(inputId, message) {
     errorDiv.innerText = message;
     errorDiv.style.display = 'block';
 
-    // Opcjonalnie: dodaj margines do całego kontenera (form-group),
-    // aby błędy nie najeżdżały na pola poniżej
+
     const formGroup = input.closest('.form-group');
     if (formGroup) {
         formGroup.style.marginBottom = '25px';
@@ -230,7 +198,7 @@ function clearFieldError(inputId) {
         errorDiv.style.display = 'none';
     }
 
-    // Przywracamy standardowy odstęp, gdy błąd znika
+    // przywracane odstępy jak błąd znika
     const formGroup = input.closest('.form-group');
     if (formGroup) {
         formGroup.style.marginBottom = ''; // lub pierwotna wartość np. '15px'
@@ -248,7 +216,7 @@ function setupLiveValidation() {
         }
     });
 }
-// 4. WALIDACJA FORMULARZA I WYSYŁKA DO RUST API
+// WALIDACJA FORMULARZA I WYSYŁKA DO API
 async function handleOrderSubmission(e) {
     e.preventDefault();
 
@@ -330,11 +298,10 @@ async function handleOrderSubmission(e) {
         return;
     }
 
-    // POPRAWKA: Budowanie spłaszczonego obiektu 'dane' dla #[serde(flatten)] w Rust
     const daneObj = {
         id: 0,
         user_id: userId ? parseInt(userId) : null,
-        date: "",
+        date: new Date().toISOString(),
         imie: name,
         nazwisko: surname,
         email: email,
@@ -405,35 +372,26 @@ function setupInputRestrictions() {
     const zipInput = document.getElementById('address-zip');
     const invZipInput = document.getElementById('invoice-zip');
 
-    // 1. RESTRYKCJA DLA TELEFONU: Pozwala na '+' tylko na samym początku i same cyfry
-// 1. RESTRYKCJA I AUTOMATYCZNE GRUPOWANIE DLA TELEFONU (Komórkowe, Stacjonarne, Krajowe i Zagraniczne)
     if (phoneInput) {
         phoneInput.addEventListener('input', (e) => {
             let value = e.target.value;
             const cursorPosition = e.target.selectionStart;
             const originalLength = value.length;
 
-            // 1. Standaryzacja: jeśli wpisze 00 na starcie, zamień na +
             if (value.startsWith('00')) {
                 value = '+' + value.slice(2);
             }
 
-            // 2. Wyciągamy informację o kierunkowym
             let hasPlus = value.startsWith('+');
 
-            // Czyścimy wszystko oprócz cyfr
             let allDigits = value.replace(/[^0-9]/g, '');
 
             let prefix;
             let mainNumber;
 
             if (hasPlus) {
-                // Dla numerów z plusem (np. +48... lub +1... lub +44...)
-                // Standardowe kody krajów mają od 1 do 3 cyfr.
-                // Najczęstszy scenariusz w PL to +48 (2 cyfry). Sprawdźmy dynamicznie:
                 if (allDigits.startsWith('48') || allDigits.length > 9) {
                     // Jeśli zaczyna się od 48 lub numer jest podejrzanie długi, odcinamy pierwsze 2 cyfry jako kierunkowy
-                    // (Możesz to rozbudować, ale podział na 2 cyfry prefiksu dla Europy/PL działa najlepiej)
                     let prefixLength = allDigits.startsWith('48') ? 2 : (allDigits.length > 11 ? 3 : 2);
                     if (allDigits.length < prefixLength) prefixLength = allDigits.length;
 
@@ -450,12 +408,12 @@ function setupInputRestrictions() {
                 mainNumber = allDigits;
             }
 
-            // 3. Ograniczenie maksymalnej długości właściwego numeru (standard E.164: max 15 cyfr globalnie)
+            // Ograniczenie maksymalnej długości właściwego numeru (standard E.164: max 15 cyfr globalnie)
             // Jeśli numer jest polski (brak prefiksu), ograniczamy go do standardowych 9 cyfr
             const maxMainDigits = prefix ? 15 : 9;
             mainNumber = mainNumber.slice(0, maxMainDigits);
 
-            // 4. Grupowanie właściwego numeru co 3 cyfry
+            // Grupowanie właściwego numeru co 3 cyfry
             let formattedMain = '';
             for (let i = 0; i < mainNumber.length; i++) {
                 if (i > 0 && i % 3 === 0) {
@@ -464,7 +422,7 @@ function setupInputRestrictions() {
                 formattedMain += mainNumber[i];
             }
 
-            // 5. Składanie finalnego ciągu
+            // Składanie finalnego ciągu
             let newValue;
             if (prefix) {
                 newValue = prefix + (formattedMain ? ' ' : '') + formattedMain;
@@ -472,7 +430,7 @@ function setupInputRestrictions() {
                 newValue = formattedMain;
             }
 
-            // 6. Przypisanie i inteligentna korekta pozycji kursora, żeby nie skakał na koniec linii
+            // Przypisanie i inteligentna korekta pozycji kursora, żeby nie skakał na koniec linii
             if (e.target.value !== newValue) {
                 e.target.value = newValue;
 
@@ -487,7 +445,7 @@ function setupInputRestrictions() {
         });
     }
 
-    // 2. RESTRYKCJA DLA NIP: Tylko cyfry
+    // RESTRYKCJA DLA NIP: Tylko cyfry
     if (nipInput) {
         nipInput.addEventListener('input', (e) => {
             let cursorPosition = e.target.selectionStart;
@@ -499,7 +457,7 @@ function setupInputRestrictions() {
         });
     }
 
-    // 3. RESTRYKCJA DLA IMION I NAZWISK: Blokada wpisywania cyfr i znaków specjalnych
+    // RESTRYKCJA DLA IMION I NAZWISK: Blokada wpisywania cyfr i znaków specjalnych
     [nameInput, surnameInput].forEach(input => {
         if (input) {
             input.addEventListener('input', (e) => {
@@ -519,7 +477,7 @@ function setupInputRestrictions() {
             input.addEventListener('input', (e) => {
                 let value = e.target.value;
 
-                // Wyciągamy same cyfry, żeby sprawdzić realną długość danych
+                // wyciągane same cyfry, sprawdzanie długości
                 let digits = value.replace(/[^0-9]/g, '');
 
                 // Maksymalnie 5 cyfr dla polskiego kodu pocztowego
@@ -536,8 +494,7 @@ function setupInputRestrictions() {
                 if (value !== newValue) {
                     let cursorPosition = e.target.selectionStart;
 
-                    // Mały trik: jeśli użytkownik właśnie sam wpisał myślnik na 3. pozycji,
-                    // lub skrypt go dodał, kursor przesunąłby się błędnie. Kontrolujemy to:
+                    // Kontrola przesunięcia -
                     e.target.value = newValue;
 
                     if (cursorPosition === 3 && value.endsWith('-')) {

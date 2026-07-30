@@ -4,15 +4,16 @@
 // const WS_URL = `ws://${BACKEND_URL}:8080/wss`;
 // const API_URL = `http://${BACKEND_URL}:8080/api/products`;
 
-// --- ZMIENNE GLOBALNE ---
+/**
+ * @type {{ id: number, role: string, token?: string } | null}
+ */
 let currentUser = null;
 let allProducts = [];
-let socket = null;
 let allUsers = [];
-let isEditingUser = false; // Flaga określająca tryb POST/PUT
+let isEditingUser = false;
 let originalUserData = {};
 
-// --- ELEMENTY DOM ---
+// DOM
 const saveProductBtn = document.getElementById('saveProductBtn');
 const newProductModeBtn = document.getElementById('newProductModeBtn');
 const productsContainer = document.getElementById('productsContainer');
@@ -24,13 +25,13 @@ const adminMessage = document.getElementById('adminMessage');
 function deselectAll() {
     document.querySelectorAll('.product-item').forEach(el => el.classList.remove('selected'));
 }
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // 1. Obsługa zakładek
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabSections = document.querySelectorAll('.tab-section');
 
     tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
             const targetTabId = button.getAttribute('data-tab');
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabSections.forEach(section => section.classList.remove('active'));
@@ -38,13 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(targetTabId).classList.add('active');
 
             // Pobieranie danych po wejściu w zakładkę
-            if (targetTabId === 'tab-users') fetchUsers();
-            if (targetTabId === 'tab-products') fetchProducts();
+            if (targetTabId === 'tab-users') await fetchUsers();
+            if (targetTabId === 'tab-products') await fetchProducts();
         });
     });
 
     // 2. Start systemu (Usunięto WS)
-    checkAuth();
+    await checkAuth();
 });
 newProductModeBtn.addEventListener('click', () => {
     document.querySelectorAll('#tab-products .form-panel input, #tab-products .form-panel textarea').forEach(el => {
@@ -79,8 +80,11 @@ function renderProductsList() {
 
 async function fetchProducts() {
     try {
-        const response = await fetch("/api/getproducts"); // Powinno lecieć z cache z serwera Go
-        if (!response.ok) throw new Error("Błąd pobierania");
+        const response = await fetch("/api/getproducts");
+        if (!response.ok) {
+            productsContainer.innerHTML = `<span style="color:red">Błąd pobierania (${response.status})</span>`;
+            return;
+        }
         allProducts = await response.json();
         renderProductsList();
     } catch (error) {
@@ -176,40 +180,33 @@ saveProductBtn.addEventListener('click', async () => {
 async function checkAuth() {
     try {
         const res = await fetch('/api/me', { credentials: 'include' });
-        if (!res.ok) throw new Error('Not authenticated');
-        const data = await res.json();
-        currentUser = data;
-        window.currentUser = data;
 
-        // Jeśli backend nie zwraca tokena, pobierz go z localStorage (z poprzedniego logowania)
-        if (!currentUser.token) {
-            const stored = localStorage.getItem('currentUser');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                currentUser.token = parsed.token;
-            }
-        }
-
-        if (currentUser.role !== "Admin") {
+        // Jeśli odpowiedź nie jest OK (np. status 401/403), natychmiast przekierowujemy
+        if (!res.ok) {
+            console.warn(`Brak autoryzacji. Status: ${res.status}`);
             window.location.href = "../index.html";
             return;
         }
-        document.getElementById('adminPanel').style.display = 'block';
-        fetchProducts();
-    } catch (e) {
-        console.error("Błąd autoryzacji:", e);
-        // Spróbuj z localStorage jako fallback
-        const stored = localStorage.getItem('currentUser');
-        if (stored) {
-            currentUser = JSON.parse(stored);
-            window.currentUser = currentUser;
-            if (currentUser.role === "Admin") {
-                document.getElementById('adminPanel').style.display = 'block';
-                fetchProducts();
-                return;
-            }
+
+        const data = await res.json();
+
+        // Weryfikacja ról użytkownika
+        if (data.role !== "Admin") {
+            console.warn("Użytkownik nie posiada uprawnień Admina.");
+            window.location.href = "../index.html";
+            return;
         }
-        // Jeśli wszystko zawiedzie – redirect na stronę główną
+
+        // Zapisujemy poprawnego użytkownika w zmiennej aplikacji
+        currentUser = data;
+
+        // Inicjalizacja widoku po pomyślnej weryfikacji
+        document.getElementById('adminPanel').style.display = 'block';
+        await fetchProducts();
+
+    } catch (err) {
+        // Blok catch obsługuje TERAZ TYLKO prawdziwe błędy (brak sieci, problem z parsowaniem JSON)
+        console.error("Błąd sieci lub serwera podczas autoryzacji:", err);
         window.location.href = "../index.html";
     }
 }

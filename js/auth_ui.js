@@ -1,65 +1,58 @@
-// auth_ui.js
-const API_BASE = `https://${window.location.hostname}:8444`;
 const headerHTML = `
 <header>
-    <a href="../index.html" style="text-decoration: none;">
+    <a href="/index.html" style="text-decoration: none;">
         <h1 data-i18n="welcome" style="margin: 0; font-size: 24px; color: black;">System i WebSocket</h1>
     </a>
-
     <div class="przyciski_podmenu_container">
         <button class="header_btn glow" onclick="window.location.href = '/strony/produkty.html'" data-i18n="nav_products"> meble </button>
         <button class="header_btn glow" onclick="window.location.href = '/strony/kontakt.html'" data-i18n="nav_contact"> meble </button>
     </div>
-
-    <div class="nav-controls">
+    <div class="nav_controls">
         <button id="basketMenu" class="glow" onclick="window.location.href = '/strony/koszyk.html'">
             <span class="basket-icon">🛒</span>
-            <!-- Licznik przedmiotów -->
             <span id="basketCount" class="basket-badge">0</span>
         </button>
         
-        <select id="language-switcher" style="padding: 5px;">
+        <select id="language_switcher">
             <option value="pl">Polski</option>
             <option value="en">English</option>
         </select>
 
         <div class="dropdown" id="userDropdown">
-            <button class="dropdown-btn" id="dropdownToggleBtn">👤 User Menu</button>
+            <button class="dropdown_btn" id="dropdownToggleBtn">👤 User Menu</button>
             <div class="dropdown-content">
-    
                 <div id="authFormSection">
                     <h3 id="authTitle" style="margin-top: 0;">Logowanie do systemu</h3>
                     <div id="loginFields">
-                        <div class="form-group">
+                        <div class="form_group">
                             <label>Nazwa użytkownika:</label>
                             <input type="text" id="username" autocomplete="username">
                         </div>
-                        <div class="form-group">
+                        <div class="form_group">
                             <label>Hasło:</label>
                             <input type="password" id="password" autocomplete="current-password">
                         </div>
                     </div>
                     
                     <div id="registerFields" style="display: none;">
-                        <div class="form-group">
+                        <div class="form_group">
                             <label>Nazwa użytkownika (rejestracja):</label>
                             <input type="text" id="reg_username" autocomplete="off">
                         </div>
-                        <div class="form-group">
+                        <div class="form_group">
                             <label>Hasło (rejestracja):</label>
                             <input type="password" id="reg_password" autocomplete="new-password">
                         </div>
-                        <div class="form-group">
+                        <div class="form_group">
                             <label>Powtórz hasło:</label>
                             <input type="password" id="confirmPassword" autocomplete="new-password">
                         </div>
-                        <!-- ... email i checkbox ... -->
                     </div>
-                    <div class="form-group registration-field" style="display: none;">
+                    <div class="form_group registration_field" style="display: none;">
                         <label>Email:</label>
                         <input type="email" id="email" placeholder="email@example.com">
                     </div>
-                    <div class="form-group registration-field" style="display: none;">
+                    <div class="form_group registration_field" style="display: none;">
                         <label style="font-size: 11px;">
                             <input type="checkbox" id="termsCheck"> Akceptuję <a href="#" id="openTerms" style="color: blue; text-decoration: underline;">regulamin</a>
                         </label>
@@ -78,7 +71,6 @@ const headerHTML = `
                     <a href="/admin" id="adminPanelLink" class="admin-link-btn user-backdrop-menu-button" style="display: none;">⚙️ Panel Administratora</a>
                     <button id="logoutBtn" style="background: #dc3545; width: 100%; margin-top: 15px;">Wyloguj się 🚪</button>
                 </div>
-    
             </div>
         </div>
     </div>
@@ -91,234 +83,304 @@ const headerHTML = `
     </div>
 </header>
 `;
+
+
 function showCookieFooter() {
-  // Sprawdź, czy użytkownik już zaakceptował w tej sesji
-  if (sessionStorage.getItem('cookieAccepted')) {
-    return;
-  }
+  if (sessionStorage.getItem('cookieAccepted')) return;
 
   const footerHTML = `
-        <div id="cookie-footer" style="
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(20,20,20,0.95);
-            color: rgba(255,255,255,0.8);
-            padding: 15px 20px;
-            z-index: 99999;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 14px;
-            backdrop-filter: blur(10px);
-        ">
-            <div style="flex: 1; min-width: 200px;">
-                <strong style="color: rgba(255,255,255,0.9);">🍪 Informacja o ciasteczkach</strong>
-                <p style="margin: 5px 0 0 0; font-size: 13px; color: rgba(255,255,255,0.6);">
-                    Ta strona używa niezbędnych plików cookies do autoryzacji użytkownika 
-                    (sesyjne ciasteczko JWT). Są one wymagane do logowania i korzystania z panelu.
-                    <br>
-                    <span style="font-size: 12px; color: rgba(255,255,255,0.4);">
-                        Dane są przechowywane tylko podczas sesji i nie są wykorzystywane do śledzenia.
-                    </span>
-                </p>
-            </div>
-            <button id="cookieAcceptBtn" style="
-                padding: 10px 30px;
-                background: rgba(255,255,255,0.15);
-                color: rgba(255,255,255,0.9);
-                border: 1px solid rgba(255,255,255,0.2);
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                white-space: nowrap;
-            ">
-                OK, rozumiem
-            </button>
+    <div id="cookie-footer" style="
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: rgba(20,20,20,0.95); color: rgba(255,255,255,0.8);
+        padding: 15px 20px; z-index: 99999; display: flex;
+        justify-content: space-between; align-items: center; flex-wrap: wrap;
+        gap: 15px; border-top: 1px solid rgba(255,255,255,0.1);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 14px; backdrop-filter: blur(10px);
+    ">
+        <div style="flex: 1; min-width: 200px;">
+            <strong style="color: rgba(255,255,255,0.9);">🍪 Informacja o ciasteczkach</strong>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: rgba(255,255,255,0.6);">
+                Ta strona używa niezbędnych plików cookies do autoryzacji użytkownika 
+                (sesyjne ciasteczko JWT). Są one wymagane do logowania i korzystania z panelu.
+                <br>
+                <span style="font-size: 12px; color: rgba(255,255,255,0.4);">
+                    Dane są przechowywane tylko podczas sesji i nie są wykorzystywane do śledzenia.
+                </span>
+            </p>
         </div>
-    `;
+        <button id="cookieAcceptBtn" style="
+            padding: 10px 30px; background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;
+            transition: all 0.3s ease; white-space: nowrap;
+        ">
+            OK, rozumiem
+        </button>
+    </div>`;
 
   document.body.insertAdjacentHTML('beforeend', footerHTML);
 
   const footer = document.getElementById('cookie-footer');
   const acceptBtn = document.getElementById('cookieAcceptBtn');
 
-  if (acceptBtn) {
-    acceptBtn.addEventListener('click', () => {
-      sessionStorage.setItem('cookieAccepted', 'true');
-      if (footer) {
-        footer.style.transition = 'opacity 0.5s ease';
-        footer.style.opacity = '0';
-        setTimeout(() => {
-          footer.remove();
-        }, 500);
-      }
-    });
-  }
+  acceptBtn?.addEventListener('click', () => {
+    sessionStorage.setItem('cookieAccepted', 'true');
+    if (footer) {
+      footer.style.transition = 'opacity 0.5s ease';
+      footer.style.opacity = '0';
+      setTimeout(() => footer.remove(), 500);
+    }
+  });
 }
+
 showCookieFooter();
+
+
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. Wstrzykiwanie HTML
   document.body.insertAdjacentHTML('afterbegin', headerHTML);
 
-  // 2. Pobieranie elementów DOM
-  const userDropdown = document.getElementById('userDropdown');
-  const dropdownToggleBtn = document.getElementById('dropdownToggleBtn');
-  const authFormSection = document.getElementById('authFormSection');
-  const profileSection = document.getElementById('profileSection');
-  const authBtn = document.getElementById('authBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const authToggleLink = document.getElementById('authToggleLink');
-  const authTitle = document.getElementById('authTitle');
-  const authMessage = document.getElementById('authMessage');
-  const profileUser = document.getElementById('profileUser');
-  const profileRole = document.getElementById('profileRole');
-  const adminPanelLink = document.getElementById('adminPanelLink');
-  const userPanelLink = document.getElementById('userPanelLink');
-  const emailInboxLink = document.getElementById('emailInboxLink');
+
+  const el = {
+    userDropdown: document.getElementById('userDropdown'),
+    dropdownToggleBtn: document.getElementById('dropdownToggleBtn'),
+    authFormSection: document.getElementById('authFormSection'),
+    profileSection: document.getElementById('profileSection'),
+    loginFields: document.getElementById('loginFields'),
+    registerFields: document.getElementById('registerFields'),
+    registrationFieldsAll: document.querySelectorAll('.registration_field'),
+    authBtn: document.getElementById('authBtn'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    authToggleLink: document.getElementById('authToggleLink'),
+    authTitle: document.getElementById('authTitle'),
+    authMessage: document.getElementById('authMessage'),
+    profileUser: document.getElementById('profileUser'),
+    profileRole: document.getElementById('profileRole'),
+    adminPanelLink: document.getElementById('adminPanelLink'),
+    userPanelLink: document.getElementById('userPanelLink'),
+    emailInboxLink: document.getElementById('emailInboxLink'),
+    // Pola formularzy
+    usernameInput: document.getElementById('username'),
+    passwordInput: document.getElementById('password'),
+    regUsernameInput: document.getElementById('reg_username'),
+    regPasswordInput: document.getElementById('reg_password'),
+    confirmPasswordInput: document.getElementById('confirmPassword'),
+    emailInput: document.getElementById('email'),
+    termsCheck: document.getElementById('termsCheck'),
+    // Modal regulaminu
+    termsOverlay: document.getElementById('termsOverlay'),
+    openTerms: document.getElementById('openTerms'),
+    closeTerms: document.getElementById('closeTerms'),
+    // Koszyk
+    basketBadge: document.getElementById('basketCount')
+  };
 
   let currentUser = null;
   let isLoginMode = true;
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+
+  //  FUNKCJE POMOCNICZE UI 
+  function setAuthMessage(msg, isError = false, isSuccess = false) {
+    el.authMessage.textContent = msg;
+    el.authMessage.style.color = isError ? "red" : (isSuccess ? "green" : "black");
+  }
+
+  function clearInputErrors() {
+    el.usernameInput?.classList.remove('input-error');
+    el.passwordInput?.classList.remove('input-error');
+    el.regUsernameInput?.classList.remove('input-error');
+    el.regPasswordInput?.classList.remove('input-error');
+  }
 
   function updateUIPerRole(role) {
-    // Panel użytkownika dla każdego zalogowanego
-    if (userPanelLink) userPanelLink.style.display = (role === "Legituser" || role === "Admin" || role === "User") ? 'block' : 'none';
-
-    if (emailInboxLink) emailInboxLink.style.display = (role === "Legituser" || role === "Admin") ? 'block' : 'none';
-    // Panel administratora tylko dla admina
-    if (adminPanelLink) {
-      adminPanelLink.style.display = (role === "Admin") ? 'block' : 'none';
+    if (el.userPanelLink) {
+      el.userPanelLink.style.display = (role === "Legituser" || role === "Admin" || role === "User") ? 'block' : 'none';
+    }
+    if (el.emailInboxLink) {
+      el.emailInboxLink.style.display = (role === "Legituser" || role === "Admin") ? 'block' : 'none';
+    }
+    if (el.adminPanelLink) {
+      el.adminPanelLink.style.display = (role === "Admin") ? 'block' : 'none';
     }
   }
 
-  // Obsługa otwierania/zamykania dropdownu
-  dropdownToggleBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    userDropdown.classList.toggle('open');
-  });
-  document.addEventListener('click', () => userDropdown.classList.remove('open'));
-  userDropdown.addEventListener('click', (e) => e.stopPropagation());
+  function switchAuthMode(toLogin) {
+    isLoginMode = toLogin;
+    setAuthMessage("");
+    clearInputErrors();
 
-  // PRZEŁĄCZANIE TRYBU LOGOWANIE / REJESTRACJA
-  authToggleLink.addEventListener('click', () => {
-    isLoginMode = !isLoginMode;
-    authMessage.textContent = "";
-    document.getElementById('loginFields').style.display = isLoginMode ? 'block' : 'none';
-    document.getElementById('registerFields').style.display = isLoginMode ? 'none' : 'block';
+    el.loginFields.style.display = isLoginMode ? 'block' : 'none';
+    el.registerFields.style.display = isLoginMode ? 'none' : 'block';
+    el.registrationFieldsAll.forEach(node => node.style.display = isLoginMode ? 'none' : 'block');
 
     if (isLoginMode) {
-      authTitle.textContent = "Logowanie do systemu";
-      authBtn.textContent = "Zaloguj";
-      authToggleLink.textContent = "Nie masz konta? Zarejestruj się";
+      el.authTitle.textContent = "Logowanie do systemu";
+      el.authBtn.textContent = "Zaloguj";
+      el.authToggleLink.textContent = "Nie masz konta? Zarejestruj się";
     } else {
-      authTitle.textContent = "Tworzenie nowego konta";
-      authBtn.textContent = "Zarejestruj się";
-      authToggleLink.textContent = "Masz już konto? Zaloguj się";
-    }
-    const regFields = document.querySelectorAll('.registration-field');
-    regFields.forEach(el => el.style.display = isLoginMode ? 'none' : 'block');
-
-    // Obsługa regulaminu
-    const termsOverlay = document.getElementById('termsOverlay');
-    const openTerms = document.getElementById('openTerms');
-    const closeTerms = document.getElementById('closeTerms');
-
-    if (openTerms) {
-      openTerms.addEventListener('click', (e) => {
-        e.preventDefault(); // Zapobiega odświeżeniu strony
-        termsOverlay.style.display = 'flex'; // Pokazuje nakładkę
-      });
+      el.authTitle.textContent = "Tworzenie nowego konta";
+      el.authBtn.textContent = "Zarejestruj się";
+      el.authToggleLink.textContent = "Masz już konto? Zaloguj się";
     }
 
-    if (closeTerms) {
-      closeTerms.addEventListener('click', () => {
-        termsOverlay.style.display = 'none'; // Chowa nakładkę
-      });
-    }
+  }
 
-    // Zamknięcie po kliknięciu w tło
-    termsOverlay.addEventListener('click', (e) => {
-      if (e.target === termsOverlay) {
-        termsOverlay.style.display = 'none';
+  function setProfileUI(user) {
+    currentUser = user;
+    if (user) {
+      // ZAPISUJEMY W CACHE SESJI
+      sessionStorage.setItem('cachedUser', JSON.stringify(user));
+
+      el.authFormSection.style.display = 'none';
+      el.profileSection.style.display = 'block';
+      el.dropdownToggleBtn.textContent = `👤 ${user.username}`;
+      el.profileUser.textContent = user.username;
+      el.profileRole.textContent = user.role;
+      updateUIPerRole(user.role);
+
+      if (typeof connectWebSocket === "function") {
+        connectWebSocket(user);
+      }
+    } else {
+      // CZYSZCZEMY CACHE
+      sessionStorage.removeItem('cachedUser');
+
+      el.authFormSection.style.display = 'block';
+      el.profileSection.style.display = 'none';
+      el.dropdownToggleBtn.textContent = "👤 User Menu";
+    }
+  }
+  const formInputs = [
+    el.usernameInput,
+    el.passwordInput,
+    el.regUsernameInput,
+    el.regPasswordInput,
+    el.confirmPasswordInput,
+    el.emailInput
+  ];
+
+  formInputs.forEach(input => {
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        el.authBtn.click(); // Symuluje kliknięcie przycisku "Zaloguj" / "Zarejestruj się"
       }
     });
   });
+  //  WYLOGOWANIE 
+  el.logoutBtn.addEventListener('click', async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (err) {
+      console.error("Błąd podczas wylogowywania na serwerze:", err);
+    }
 
-  // OBSŁUGA LOGOWANIA / REJESTRACJI
-  authBtn.addEventListener('click', async (e) => {
+    if (typeof disconnectWebSocket === "function") {
+      disconnectWebSocket();
+    }
+
+    // Usunięcie z cache przy wylogowaniu
+    sessionStorage.removeItem('cachedUser');
+
+    setProfileUI(null);
+    if (el.passwordInput) el.passwordInput.value = "";
+    setAuthMessage("Wylogowano pomyślnie.", false, true);
+  });
+
+  function resetRegisterForm() {
+    if (el.usernameInput) el.usernameInput.value = "";
+    if (el.passwordInput) el.passwordInput.value = "";
+    if (el.regUsernameInput) el.regUsernameInput.value = "";
+    if (el.regPasswordInput) el.regPasswordInput.value = "";
+    if (el.confirmPasswordInput) el.confirmPasswordInput.value = "";
+    if (el.emailInput) el.emailInput.value = "";
+    if (el.termsCheck) el.termsCheck.checked = false;
+  }
+
+  // DROPDOWN LOGIKI
+  el.dropdownToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    el.userDropdown.classList.toggle('open');
+  });
+
+  document.addEventListener('click', () => el.userDropdown.classList.remove('open'));
+  el.userDropdown.addEventListener('click', (e) => e.stopPropagation());
+
+  //  PRZEŁĄCZANIE FORMULARZA 
+  el.authToggleLink.addEventListener('click', () => switchAuthMode(!isLoginMode));
+
+  //  OBSŁUGA REGULAMINU (Jednorazowe podpięcie) 
+  el.openTerms?.addEventListener('click', (e) => {
     e.preventDefault();
-    authMessage.textContent = "";
-    authMessage.style.color = "black";
+    if (el.termsOverlay) el.termsOverlay.style.display = 'flex';
+  });
 
-    const uInput = document.getElementById('username');
-    const pInput = document.getElementById('password');
-    const cpInput = document.getElementById('confirmPassword'); // nowe
-    const eInput = document.getElementById('email');           // nowe
-    const tCheck = document.getElementById('termsCheck');     // nowe
-    uInput.classList.remove('input-error');
-    pInput.classList.remove('input-error');
+  el.closeTerms?.addEventListener('click', () => {
+    if (el.termsOverlay) el.termsOverlay.style.display = 'none';
+  });
 
-    const username = isLoginMode
-        ? document.getElementById('username').value.trim()
-        : document.getElementById('reg_username').value.trim();
+  el.termsOverlay?.addEventListener('click', (e) => {
+    if (e.target === el.termsOverlay) {
+      el.termsOverlay.style.display = 'none';
+    }
+  });
 
-    const password = isLoginMode
-        ? document.getElementById('password').value
-        : document.getElementById('reg_password').value;
+  //  OBSŁUGA LOGOWANIA / REJESTRACJI
+  el.authBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    setAuthMessage("");
+    clearInputErrors();
 
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    const confirmPassword = cpInput ? cpInput.value : "";
-    const email = eInput ? eInput.value.trim() : "";
-    const termsChecked = tCheck ? tCheck.checked : false;
+    const username = (isLoginMode ? el.usernameInput.value : el.regUsernameInput.value).trim();
+    const password = isLoginMode ? el.passwordInput.value : el.regPasswordInput.value;
 
     if (!isLoginMode) {
+      const confirmPassword = el.confirmPasswordInput ? el.confirmPasswordInput.value : "";
+      const email = el.emailInput ? el.emailInput.value.trim() : "";
+      const termsChecked = el.termsCheck ? el.termsCheck.checked : false;
+
       if (!usernameRegex.test(username)) {
-        uInput.classList.add('input-error');
-        authMessage.style.color = "red";
-        authMessage.textContent = "Błąd: Login musi mieć 3-20 znaków (litery, cyfry, '_').";
+        el.regUsernameInput?.classList.add('input-error');
+        setAuthMessage("Błąd: Login musi mieć 3-20 znaków (litery, cyfry, '_').", true);
         return;
       }
       if (password.length < 8 || password.length > 100) {
-        pInput.classList.add('input-error');
-        authMessage.style.color = "red";
-        authMessage.textContent = "Błąd: Hasło musi mieć od 8 do 100 znaków.";
+        el.regPasswordInput?.classList.add('input-error');
+        setAuthMessage("Błąd: Hasło musi mieć od 8 do 100 znaków.", true);
         return;
       }
       if (password !== confirmPassword) {
-        authMessage.style.color = "red";
-        authMessage.textContent = "Błąd: Hasła nie są identyczne.";
+        setAuthMessage("Błąd: Hasła nie są identyczne.", true);
         return;
       }
       if (!email.includes('@')) {
-        authMessage.style.color = "red";
-        authMessage.textContent = "Błąd: Podaj poprawny email.";
+        setAuthMessage("Błąd: Podaj poprawny email.", true);
         return;
       }
       if (!termsChecked) {
-        authMessage.style.color = "red";
-        authMessage.textContent = "Błąd: Zaakceptuj regulamin.";
+        setAuthMessage("Błąd: Zaakceptuj regulamin.", true);
         return;
       }
     } else {
       if (!usernameRegex.test(username) || !password) {
-        authMessage.style.color = "red";
-        authMessage.textContent = "Błędny format loginu lub nie uzupełniono pól.";
-        if (!usernameRegex.test(username)) uInput.classList.add('input-error');
-        if (!password) pInput.classList.add('input-error');
+        setAuthMessage("Błędny format loginu lub nie uzupełniono pól.", true);
+        if (!usernameRegex.test(username)) el.usernameInput.classList.add('input-error');
+        if (!password) el.passwordInput.classList.add('input-error');
         return;
       }
     }
 
     const payload = isLoginMode
         ? { username, password }
-        : { username, password, confirm_password: confirmPassword, email, name: username, registration_conditions: termsChecked};
+        : {
+          username,
+          password,
+          confirm_password: el.confirmPasswordInput ? el.confirmPasswordInput.value : "",
+          email: el.emailInput ? el.emailInput.value.trim() : "",
+          name: username,
+          registration_conditions: el.termsCheck ? el.termsCheck.checked : false
+        };
+
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
 
     try {
@@ -334,203 +396,95 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch (e) {}
+        } catch {}
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
 
       if (isLoginMode) {
-        currentUser = data;
-        // localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        // localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        // USTAW CIASTECZKO Z TOKENEM DLA GO
-        // if (data.token) {
-        //   document.cookie = `token=${data.token}; path=/; Secure; SameSite=Strict; max-age=86400`;
-        // }
-
-        // Zmiana interfejsu dropdownu
-        authFormSection.style.display = 'none';
-        profileSection.style.display = 'block';
-        dropdownToggleBtn.textContent = `👤 ${currentUser.username}`;
-        profileUser.textContent = currentUser.username;
-        profileRole.textContent = currentUser.role;
-
-
-        updateUIPerRole(currentUser.role);
-        // if (currentUser.role === "Admin" || currentUser.role === "User") {
-        //   // Tutaj możesz np. pokazać panel użytkownika, który jest wspólny
-        //   if (userPanelLink) userPanelLink.style.display = 'block';
-        // }
-        //
-        // // Widoczność zakładki Admina (Bezpieczne wywołanie dla innych podstron)
-        // if (currentUser.role === "Admin") {
-        //   if (adminPanelLink) adminPanelLink.style.display = 'block';
-        // } else {
-        //   if (adminPanelLink) adminPanelLink.style.display = 'none';
-        // }
-
-        // Odpalenie zewnętrznej funkcji z websocket.js
-        if (typeof connectWebSocket === "function") {
-          connectWebSocket(currentUser);
-        }
+        setProfileUI(data);
       } else {
-        authMessage.style.color = "green";
-        authMessage.textContent = data.message;
-        isLoginMode = true;
-        authTitle.textContent = "Logowanie do systemu";
-        authBtn.textContent = "Zaloguj";
-        authToggleLink.textContent = "Nie masz konta? Zarejestruj się";
-
-        // 2. Ukrycie pól rejestracyjnych
-        const regFields = document.querySelectorAll('.registration-field');
-        regFields.forEach(el => el.style.display = 'none');
-
-        // 3. Wyczyść pola (opcjonalnie, ale bardzo zalecane dla porządku)
-        document.getElementById('username').value = "";
-        document.getElementById('password').value = "";
-        document.getElementById('confirmPassword').value = "";
-        document.getElementById('email').value = "";
-        document.getElementById('termsCheck').checked = false;
+        switchAuthMode(true);
+        setAuthMessage(data.message, false, true);
+        resetRegisterForm();
       }
     } catch (error) {
-      authMessage.style.color = "red";
-      authMessage.textContent = error.message;
+      setAuthMessage(error.message, true);
     }
   });
 
-  // WYLOGOWANIE
-  logoutBtn.addEventListener('click', async() => {
-    currentUser = null;
-    // localStorage.removeItem('currentUser');
-    // localStorage.removeItem('userToken');
-
-    // USUŃ CIASTECZKO TOKEN
-    // document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; Secure; SameSite=Strict';
-    // document.cookie = 'token=; path=/; max-age=0; Secure; SameSite=Strict';
-
+  //  WYLOGOWANIE 
+  el.logoutBtn.addEventListener('click', async () => {
     try {
       await fetch('/api/logout', { method: 'POST' });
     } catch (err) {
       console.error("Błąd podczas wylogowywania na serwerze:", err);
     }
 
-    // Odpalenie zewnętrznej funkcji z websocket.js
     if (typeof disconnectWebSocket === "function") {
       disconnectWebSocket();
     }
 
-    profileSection.style.display = 'none';
-    authFormSection.style.display = 'block';
-    dropdownToggleBtn.textContent = "👤 User Menu";
-    document.getElementById('password').value = "";
-    authMessage.style.color = "green";
-    authMessage.textContent = "Wylogowano pomyślnie.";
+    setProfileUI(null);
+    if (el.passwordInput) el.passwordInput.value = "";
+    setAuthMessage("Wylogowano pomyślnie.", false, true);
   });
 
-  // PRZYWRACANIE SESJI PO POWROCIE NA STRONĘ
-  // function restoreSession() {
-  //   const storedUser = localStorage.getItem('currentUser');
-  //   if (storedUser) {
-  //     currentUser = JSON.parse(storedUser);
-  //
-  //     const storedToken = localStorage.getItem('userToken');
-  //     if (storedToken) {
-  //       document.cookie = `token=${storedToken}; path=/; Secure; SameSite=Strict; max-age=86400`;
-  //     }
-  //
-  //     // Zmiana interfejsu dropdownu
-  //     authFormSection.style.display = 'none';
-  //     profileSection.style.display = 'block';
-  //     dropdownToggleBtn.textContent = `👤 ${currentUser.username}`;
-  //     profileUser.textContent = currentUser.username;
-  //     profileRole.textContent = currentUser.role;
-  //
-  //     // Widoczność zakładki Admina
-  //     if (currentUser.role === "Admin") {
-  //       if (adminPanelLink) adminPanelLink.style.display = 'block';
-  //     } else {
-  //       if (adminPanelLink) adminPanelLink.style.display = 'none';
-  //     }
-  //     updateUIPerRole(currentUser.role);
-  //
-  //     // Automatyczne połączenie z WebSocketem
-  //     if (typeof connectWebSocket === "function") {
-  //       connectWebSocket(currentUser);
-  //     }
-  //   }
-  // }
-
-  // async function loadUserData() {
-  //   try {
-  //     const res = await fetch('/api/me');
-  //     if (res.ok) {
-  //       const data = await res.json();
-  //       // Ustaw UI (pokaż profil, przyciski)
-  //       currentUser = data;
-  //       // ... aktualizacja interfejsu
-  //     } else {
-  //       // Użytkownik niezalogowany – pokaż formularz logowania
-  //     }
-  //   } catch(e) {
-  //     // obsługa błędu
-  //   }
-  // }
+  //  POBIERANIE DANYCH UŻYTKOWNIKA 
   async function loadUserData() {
+    // NATYCHMIASTOWE ODCZYTANIE Z CACHE (zapobiega miganiu)
+    const cachedUser = sessionStorage.getItem('cachedUser');
+    if (cachedUser) {
+      try {
+        const parsedUser = JSON.parse(cachedUser);
+        setProfileUI(parsedUser);
+      } catch (e) {
+        sessionStorage.removeItem('cachedUser');
+      }
+    }
+
+    // WERYFIKACJA W TLE Z SERWEREM (aktualizacja stanu)
     try {
       const res = await fetch('/api/me', { credentials: 'include' });
       if (res.ok) {
-        const data = await res.json();
-        currentUser = data;
-
-        // UI – pokaż profil, schowaj logowanie
-        authFormSection.style.display = 'none';
-        profileSection.style.display = 'block';
-        dropdownToggleBtn.textContent = `👤 ${currentUser.username}`;
-        profileUser.textContent = currentUser.username;
-        profileRole.textContent = currentUser.role;
-        updateUIPerRole(currentUser.role);
-
-        // Połącz WebSocket (przez serwer Go, nie bezpośrednio do Rusta)
-        if (typeof connectWebSocket === "function") {
-          connectWebSocket(currentUser); // przekazujemy dane użytkownika
-        }
+        const user = await res.json();
+        setProfileUI(user); // Odświeża dane jeśli się zmieniły
       } else {
-        // Użytkownik niezalogowany – pokaż formularz
-        authFormSection.style.display = 'block';
-        profileSection.style.display = 'none';
-        dropdownToggleBtn.textContent = "👤 User Menu";
+        // Jeśli sesja na serwerze wygasła, a w cache był użytkownik – wyloguj
+        setProfileUI(null);
       }
-    } catch(e) {
+    } catch (e) {
       console.error("Błąd ładowania danych użytkownika:", e);
-      // W razie błędu pokaż formularz
-      authFormSection.style.display = 'block';
-      profileSection.style.display = 'none';
+      // W przypadku braku sieci zostawiamy to co było w cache lub czyścimy w zależności od wymagań
     }
   }
 
-  // ==========================================
-  // OBSŁUGA KOSZYKA (DODANE ELEMENTY)
-  // ==========================================
+  // KOSZYK
+  function getCart() {
+    try {
+      return JSON.parse(localStorage.getItem('cart')) || [];
+    } catch {
+      return [];
+    }
+  }
 
   function updateBasketDOM() {
-    const badge = document.getElementById('basketCount');
-    if (!badge) return; // Zabezpieczenie na wypadek, gdyby elementu nie było w DOM
+    if (!el.basketBadge) return;
 
-    const basket = JSON.parse(localStorage.getItem('cart')) || [];
-    const totalItems = basket.reduce((sum, item) => sum + item.quantity, 0);
+    const basket = getCart();
+    const totalItems = basket.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
     if (totalItems > 0) {
-      badge.textContent = totalItems;
-      badge.style.display = 'block';
+      el.basketBadge.textContent = totalItems;
+      el.basketBadge.style.display = 'block';
     } else {
-      badge.style.display = 'none';
+      el.basketBadge.style.display = 'none';
     }
   }
 
-  // Funkcja globalna, żebyś mógł jej użyć w pliku produkty.js przy kliknięciu "dodaj"
-  window.addToCart = function(productId) {
-    let basket = JSON.parse(localStorage.getItem('cart')) || [];
+  window.addToCart = function (productId) {
+    const basket = getCart();
     const existingItem = basket.find(item => item.id === productId);
 
     if (existingItem) {
@@ -542,14 +496,11 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem('cart', JSON.stringify(basket));
     updateBasketDOM();
   };
-  // document.addEventListener('DOMContentLoaded', showCookieFooter);
-  // restoreSession();
+
+  // Uruchomienie początkowe
   loadUserData().catch(err => {
     console.error('Nie udało się załadować danych użytkownika:', err);
   });
-  // if (typeof connectWebSocket === "function") {
-  //   connectWebSocket(); // bez currentUser
-  // }
-  updateBasketDOM(); // Wywołanie odświeżenia licznika po wstrzyknięciu HTML
-});
 
+  updateBasketDOM();
+});

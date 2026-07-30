@@ -3,13 +3,10 @@
  font-family: 'Helvetica Neue', Arial, sans-serif;
 }
 body {
-  /*padding-top: 5rem;*/
   font-family: sans-serif;
   width: calc(100vw - 16px);
-  /*height: calc(100vh - (16px + 5rem));*/
   height: 100vh;
   overflow-y: clip;
-  /*margin: 2rem;*/
   background: rgb(20,20,20);
 }
 
@@ -28,7 +25,7 @@ header {
   top: 0;
   z-index: 999;
 }
-.nav-controls {
+.nav_controls {
   background-color: transparent;
   display: flex;
   gap: 15px;
@@ -72,7 +69,7 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   background-color: rgba(255, 255, 255, 0.8);
   color: black;
 }
-.dropdown-btn {
+.dropdown_btn {
   background: transparent;
   color: hsla(204, 0%, 100%, 0.7);
   border: 1px solid hsla(0, 0%, 100%, 0.2);
@@ -82,7 +79,7 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   font-weight: bold;
   transition: box-shadow 1.5s ease;
 }
-.dropdown-btn:hover {
+.dropdown_btn:hover {
   color: hsla(204, 0%, 100%, 0.9);
 
   border: 1px solid hsla(28, 100%, 50%, 0.3);
@@ -220,7 +217,7 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   /* Ukrywamy licznik, gdy koszyk jest pusty */
   display: none;
 }
-#language-switcher{
+#language_switcher{
   padding: 10px;
   background: rgba(255,255,255,0.1);
   color: rgba(255,255,255,0.7);
@@ -228,23 +225,12 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   height: 39px;
   width: 82px;
 }
-#language-switcher option {
+#language_switcher option {
   background: rgba(0,0,0,0.9);
   color: rgba(255,255,255,0.7);
 }
 
-/*@media screen and (orientation: portrait){*/
-/*  body{*/
-/*    overflow-y: auto;*/
-/*    overflow-x: clip;*/
-/*  }*/
-/*  .header_btn{*/
-/*    width: fit-content;*/
-/*    border: 1px solid hsla(0, 0%, 100%, 0.2);*/
-/*    font-size: 1.2rem;*/
-/*  }*/
-/*  */
-/*}*/
+
 @media screen and (orientation: portrait) {
   body {
     position: relative;
@@ -254,7 +240,6 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
     overflow-x: clip;
   }
 
-  /* Kontener główny nagłówka - pełna szerokość bez wewnętrznych odstępów na boki */
   header {
     padding: 0;
     display: flex;
@@ -262,19 +247,17 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
     align-items: center;
   }
 
-  /* Kontener prawych przycisków rozciągnięty na resztę miejsca bez odstępów */
-  .nav-controls {
+  .nav_controls {
     display: flex;
-    flex: 4; /* Zajmuje 4 z 5 części nagłówka (pozostałe 1/5 ma pierwsze logo/przycisk) */
+    flex: 4;
     gap: 0;
     align-items: center;
     width: 80%;
   }
 
-  /* Każdy bezpośredni przycisk/element w headerze i nav-controls zajmuje dokładnie 1/5 szerokości */
   header > .header_btn,
   header > button,
-  .nav-controls > * {
+  .nav_controls > * {
     flex: 1 1 0 !important;
     width: 20% !important;
     min-width: 0 !important;
@@ -289,7 +272,6 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
     margin: 0;
   }
 
-  /* Reset specyficznych styli szerokości/wysokości przycisków i rozwijanych menu */
   .header_btn {
     font-size: 0.9rem;
     border: 1px solid hsla(0, 0%, 100%, 0.2);
@@ -303,13 +285,13 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
     justify-content: normal;
   }
 
-  .dropdown-btn {
+  .dropdown_btn {
     width: 100%;
     font-size: 0.85rem;
     padding: 0;
   }
 
-  #language-switcher {
+  #language_switcher {
     width: 100% !important;
     font-size: 0.85rem;
   }
@@ -321,28 +303,23 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
     padding: 0;
   }
 
-  .header_btn, #language-switcher, #basketMenu, .dropdown-btn {
+  .header_btn, #language_switcher, #basketMenu, .dropdown_btn {
     height: 66px;
 
-    /* Dynamiczna czcionka:
-       - minimalnie: 10px (żeby nie był mikro-druk)
-       - sugerowanie: 3.2vw (płynne skalowanie z ekranem)
-       - maksymalnie: 14px */
+
     font-size: clamp(10px, 3.2vw, 2rem) !important;
 
-    /* Zabezpieczenie przed wychodzeniem tekstu z przycisku */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   header > .header_btn,
-  .nav-controls > * {
+  .nav_controls > * {
     container-type: inline-size;
   }
 
-  .header_btn, #language-switcher, #basketMenu, .dropdown-btn {
+  .header_btn, #language_switcher, #basketMenu, .dropdown_btn {
     height: 66px;
-    /* 14cqw = 14% szerokości przycisku. Clamp zapobiega skrajnościom */
     font-size: clamp(9px, 14cqw, 15px) !important;
     white-space: nowrap;
     overflow: hidden;

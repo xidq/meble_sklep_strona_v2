@@ -92,38 +92,32 @@ async function selectUserForEdit(userObj) {
         const surname = u.surname || u.Surname || u.nazwisko || u.Nazwisko || "";
 
         // 2. Poprawione dopasowanie Roli dla u_permission
-        const rawRole = String(u.permission || u.Permission || u.role || u.Role || fallbackPermission).trim();        // let rawRole = u.permission || u.Permission || u.role || u.Role || "User";
-        // Normalizacja pierwszej litery na dużą (np. admin -> Admin, user -> User)
+        const rawRole = String(u.permission || u.Permission || u.role || u.Role || fallbackPermission).trim();
+
         const roleSelect = document.getElementById('u_permission');
         if (roleSelect) {
-            // Szukamy opcji w select, porównując wartości bez względu na wielkość liter
+
             const matchedOption = Array.from(roleSelect.options).find(
                 option => option.value.toLowerCase() === rawRole.toLowerCase()
             );
 
             if (matchedOption) {
-                roleSelect.value = matchedOption.value; // Ustawiamy właściwą wartość z opcji
+                roleSelect.value = matchedOption.value;
             } else {
-                roleSelect.value = "User"; // Domyślna wartość w przypadku braku dopasowania
+                roleSelect.value = "User"; //default
             }
         }
 
-        // 1. Poprawiony Checkbox valid (sprawdzamy czy jawnie zwrócono true)
         const isValid = (u.valid !== undefined) ? u.valid :
             (u.Valid !== undefined) ? u.Valid :
                 (u.registration_conditions !== undefined) ? u.registration_conditions : false;
 
-        // Ustawianie wartości w formularzu
+        // formularz
         document.getElementById('u_id').value = id;
         document.getElementById('u_username').value = username;
         document.getElementById('u_email').value = email;
         document.getElementById('u_name').value = name;
         document.getElementById('u_surname').value = surname;
-
-        // const roleSelect = document.getElementById('u_permission');
-        // if (roleSelect) {
-        //     roleSelect.value = rawRole;
-        // }
 
         const validCb = document.getElementById('u_valid');
         if (validCb) {
@@ -166,7 +160,7 @@ saveUserBtn.addEventListener('click', async () => {
         return el ? el.value : "";
     };
 
-    let payload = {};
+    let payload;
     let method = isEditingUser ? 'PUT' : 'POST';
 
     if (isEditingUser) {
@@ -179,7 +173,6 @@ saveUserBtn.addEventListener('click', async () => {
             registration_conditions: true
         };
     } else {
-        // Payload dla POST (sztywne hasło 123456)
         const validElem = document.getElementById('u_valid');
         payload = {
             username: username,
@@ -249,8 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearAllModifiedDots();
                 return;
             }
-
-            let isModified = false;
+            /** @type {boolean} */
+            let isModified;
             let origVal = originalUserData[input.id];
 
             if (input.type === 'checkbox') {
