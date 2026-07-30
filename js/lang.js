@@ -20,6 +20,18 @@ const translations = {
         spec_width: "Szerokość:",
         spec_depth: "Głębokość:",
         spec_price: "Cena:",
+        hero_title: "Żyj wygodniej",
+        hero_desc: "Odkryj naszą kolekcję nowoczesnych mebli, które łączą w sobie unikalny design, najwyższą jakość wykonania oraz niezrównany komfort użytkowania na co dzień. Stwórz wnętrze swoich marzeń.",
+        cart_title: "Twój koszyk:",
+        cart_summary: "Podsumowanie",
+        cart_sum: "Suma (szacowana):",
+        cart_checkout: "Przejdź do płatności",
+        cart_empty: "Twój koszyk jest pusty. Dodaj produkty, aby zobaczyć je tutaj.",
+        cart_standard_version: "Wersja standardowa prosto z katalogu",
+        cart_unit_price: "Cena jedn.:",
+        cart_remove: "Usuń",
+        cart_clear: "Wyczyść koszyk 🗑️",
+        cart_clear_confirm: "Czy na pewno chcesz usunąć wszystkie produkty z koszyka?"
     },
     en: {
         welcome: "logo",
@@ -41,6 +53,18 @@ const translations = {
         spec_width: "Width:",
         spec_depth: "Depth:",
         spec_price: "Price:",
+        hero_title: "Live comfortable",
+        hero_desc: "Discover our collection of modern furniture that combines unique design, the highest quality craftsmanship, and unparalleled comfort for everyday use. Create the interior of your dreams.",
+        cart_title: "Your cart:",
+        cart_summary: "Summary",
+        cart_sum: "Sum (approx):",
+        cart_checkout: "Forward with transaction",
+        cart_empty: "Your cart is empty. Add products to see them here",
+        cart_standard_version: "Standard version straight from the catalog",
+        cart_unit_price: "Unit price:",
+        cart_remove: "Remove",
+        cart_clear: "Clear cart 🗑️",
+        cart_clear_confirm: "Are you sure you want to remove all products from the cart?"
     }
 };
 

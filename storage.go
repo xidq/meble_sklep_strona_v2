@@ -141,7 +141,7 @@ type ModelPayload struct {
 // var pathRegex = regexp.MustCompile(`src/api/+/products/[^/]+/(images|models)/`)
 //
 // // fixPathsAndClean czyści product_id i mapuje ścieżki plików w głąb całego JSON-a
-// // 2. Zmiana: Usunięcie "../" ze ścieżek podmienianych w locie (sygnatura zostaje bez zmian)
+// // 2. Zmiana: Usunięcie "/" ze ścieżek podmienianych w locie (sygnatura zostaje bez zmian)
 //
 //	func fixPathsAndClean(data interface{}, modyfikator, typ string) interface{} {
 //		switch v := data.(type) {

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Title</title>
-  <link rel="stylesheet" href="../css/header.css">
-  <link rel="stylesheet" href="../css/text.css">
+  <link rel="stylesheet" href="/css/header.css">
+  <link rel="stylesheet" href="/css/text.css">
   <style>
     .cart-wrapper {
       max-width: 1200px;
@@ -31,23 +31,23 @@
 </head>
 <body>
   <div class="cart-wrapper">
-    <h1 class="cart-title">Twój Koszyk</h1>
+    <h1 class="cart-title" data-i18n="cart_title">Twój Koszyk</h1>
 
     <div class="cart-container">
       <div class="cart-items" id="cart-items-list">
     </div>
       <div class="cart-summary">
-        <h3>Podsumowanie</h3>
+        <h3 data-i18n="cart_summary">Podsumowanie</h3>
         <div style="display: flex; justify-content: space-between; margin: 20px 0; font-weight: bold; font-size: 18px;">
-          <span>Suma (szacowana):</span>
+          <span data-i18n="cart_sum">Suma (szacowana):</span>
           <span id="cart-total-price">0.00 zł</span>
         </div>
-        <button class="checkout-btn" id="checkout-submit-btn">Przejdź do płatności (API Console)</button>
+        <button class="checkout-btn" id="checkout-submit-btn" data-i18n="cart_checkout">Przejdź do płatności (API Console)</button>
       </div>
     </div>
   </div>
-  <script src="../js/auth_ui.js"></script>
-  <script src="../js/lang.js"></script>
-  <script src="../js/cart.js"></script>
+  <script src="/js/auth_ui.js"></script>
+  <script src="/js/lang.js"></script>
+  <script src="/js/cart.js"></script>
 </body>
 </html>

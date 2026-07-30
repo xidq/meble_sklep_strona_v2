@@ -832,8 +832,8 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 //		switch v := val.(type) {
 //		case string:
 //			if strings.Contains(v, "src/api/products/") {
-//				// Zamiana: src/api/products/{nameId}/(images|models)/ -> ../data/products/{nameId}/{typ}/
-//				obj[key] = strings.Replace(v, "src/api/products/", "../data/products/", 1)
+//				// Zamiana: src/api/products/{nameId}/(images|models)/ -> /data/products/{nameId}/{typ}/
+//				obj[key] = strings.Replace(v, "src/api/products/", "/data/products/", 1)
 //				obj[key] = strings.Replace(obj[key].(string), "/images/", "/"+typ+"/", 1)
 //				obj[key] = strings.Replace(obj[key].(string), "/models/", "/"+typ+"/", 1)
 //			}
