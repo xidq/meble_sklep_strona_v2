@@ -67,6 +67,47 @@ function calculateConductorF0(n, k) {
 }
 
 
+function ensureProgressBar() {
+    const overlay = document.getElementById('loading-overlay');
+    if (!overlay || document.getElementById('loading-progress-text')) return;
+
+
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.gap = '16px';
+
+
+    const textDiv = document.createElement('div');
+    textDiv.id = 'loading-progress-text';
+    Object.assign(textDiv.style, {
+        fontFamily: 'monospace',
+        fontSize: '1.4rem',
+        color: '#333',
+        textAlign: 'center',
+        letterSpacing: '2px',
+        backgroundColor: 'rgba(255,255,255,0.4)',
+        padding: '6px 18px',
+        borderRadius: '8px',
+        display: 'inline-block'
+    });
+    textDiv.textContent = '[░░░░░░░░░░░░░░░░░░░░] 0%';
+
+    overlay.appendChild(textDiv);
+}
+
+function updateLoadingProgress(percent) {
+    ensureProgressBar();
+    const textDiv = document.getElementById('loading-progress-text');
+    if (!textDiv) return;
+
+    const totalBlocks = 20;
+    const filled = Math.round((percent / 100) * totalBlocks);
+    const empty = totalBlocks - filled;
+    const bar = '█'.repeat(filled) + '░'.repeat(empty);
+    textDiv.textContent = `[${bar}] ${Math.round(percent)}%`;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     initBabylon();
@@ -167,28 +208,46 @@ async function startConfigurator() {
     const urlParams = new URLSearchParams(window.location.search);
     const modelId = urlParams.get('id') || "komoda_1";
 
+    // Pokaż overlay i zainicjuj pasek
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.style.display = 'flex';   // lub 'block' – jak w Twoim CSS
+        overlay.style.opacity = '1';
+    }
+    updateLoadingProgress(0);
+
     try {
         const resRouter = await fetch('/data/router.json');
+        updateLoadingProgress(10);
+
         const routerData = await resRouter.json();
         const activeRoute = routerData.find(item => item.id === modelId);
-
         if (!activeRoute) {
             document.getElementById('model-title').innerText = "Nie znaleziono modelu";
+            if (overlay) overlay.style.display = 'none';
             return;
         }
 
-        const [resProduct, resModel, resWood, resMetal, resGlass] = await Promise.all([
-            fetch(activeRoute.product),
-            fetch(activeRoute.model),
-            fetch('/data/textures/textures.json'),
-            fetch('/data/textures/metal_material.json'),
-            fetch('/data/textures/glass_material.json')
+        // Równoległe pobieranie 5 plików
+        let completed = 0;
+        const totalRequests = 5;
+        function onRequestComplete() {
+            completed++;
+            const progress = 10 + (completed / totalRequests) * 30; // 10–40%
+            updateLoadingProgress(progress);
+        }
+
+        const [productData, modelJsonRaw, woodTextures, metalRaw, glassRaw] = await Promise.all([
+            fetch(activeRoute.product).then(r => { onRequestComplete(); return r.json(); }),
+            fetch(activeRoute.model).then(r => { onRequestComplete(); return r.json(); }),
+            fetch('/data/textures/textures.json').then(r => { onRequestComplete(); return r.json(); }),
+            fetch('/data/textures/metal_material.json').then(r => { onRequestComplete(); return r.json(); }),
+            fetch('/data/textures/glass_material.json').then(r => { onRequestComplete(); return r.json(); })
         ]);
 
-        const productData = await resProduct.json();
-        let modelJson = await resModel.json();
-        if (Array.isArray(modelJson)) modelJson = modelJson[0];
+        updateLoadingProgress(40); // dane gotowe
 
+        let modelJson = Array.isArray(modelJsonRaw) ? modelJsonRaw[0] : modelJsonRaw;
         const currentLang = localStorage.getItem('user-lang') || 'pl';
         document.getElementById('model-title').innerText = productData[`name_${currentLang}`] || productData.name_pl || productData.name_id;
 
@@ -202,9 +261,9 @@ async function startConfigurator() {
             ilosc_szklo: parseFloat(modelJson.glass ?? productData.glass) || 0.0
         };
 
-        woodTexturesData = await resWood.json();
-        metalMaterialsData = (await resMetal.json()).map(item => ({...item, price: item.cena || item.price}));
-        glassMaterialsData = (await resGlass.json()).map(item => ({...item, price: item.cena || item.price}));
+        woodTexturesData = woodTextures;
+        metalMaterialsData = metalRaw.map(item => ({...item, price: item.cena || item.price}));
+        glassMaterialsData = glassRaw.map(item => ({...item, price: item.cena || item.price}));
 
         buildMaterialDropdowns();
         loadGlbModel(selectedModelDetails.model, selectedModelDetails);
@@ -213,6 +272,10 @@ async function startConfigurator() {
         console.error("Błąd krytyczny konfiguratora:", err);
         const titleEl = document.getElementById('model-title');
         if (titleEl) titleEl.innerText = "Błąd ładowania konfiguratora";
+        if (overlay) {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 300);
+        }
     }
 }
 
@@ -222,108 +285,120 @@ function loadGlbModel(glbUrl, modelDetails) {
     const rootPath = glbUrl.substring(0, lastSlash + 1);
     const fileName = glbUrl.substring(lastSlash + 1);
 
-    BABYLON.SceneLoader.ImportMesh("", rootPath, fileName, scene, (meshes) => {
-        loadedMeshes = meshes;
+    // Progres modelu (40% → 100%)
+    function modelProgress(loaded, total) {
+        if (total > 0) {
+            const fraction = loaded / total;
+            const overall = 40 + fraction * 60;
+            updateLoadingProgress(overall);
+        }
+    }
 
-        const rootMesh = meshes[0];
-        const bounds = rootMesh.getHierarchyBoundingVectors(true);
-        const size = bounds.max.subtract(bounds.min);
-        const center = bounds.min.add(size.scale(0.5));
+    BABYLON.SceneLoader.ImportMesh("", rootPath, fileName, scene,
+        // --- onSuccess (bez zmian, tylko drobna modyfikacja na końcu) ---
+        (meshes) => {
+            loadedMeshes = meshes;
+            const rootMesh = meshes[0];
+            const bounds = rootMesh.getHierarchyBoundingVectors(true);
+            const size = bounds.max.subtract(bounds.min);
+            const center = bounds.min.add(size.scale(0.5));
 
-        camera.setTarget(center);
-        const maxDimension = Math.max(size.x, size.y, size.z);
-        camera.radius = maxDimension * 2.5;
+            camera.setTarget(center);
+            const maxDimension = Math.max(size.x, size.y, size.z);
+            camera.radius = maxDimension * 2.5;
 
-        // Dynamiczne tworzenie podłogi łapiącej cień
-        const groundY = bounds.min.y;
-        const ground = BABYLON.MeshBuilder.CreateGround("shadowGround", {
-            width: 5,
-            height: 5
-        }, scene);
+            const groundY = bounds.min.y;
+            const ground = BABYLON.MeshBuilder.CreateGround("shadowGround", { width: 5, height: 5 }, scene);
+            const groundMat = new BABYLON.PBRMaterial("groundMat", scene);
+            groundMat.twoSidedLighting = true;
+            groundMat.backFaceCulling = false;
+            groundMat.albedoColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+            groundMat.roughness = 0.8;
+            groundMat.metallic = 0.0;
+            ground.material = groundMat;
+            ground.position.y = groundY - 0.002;
+            ground.receiveShadows = true;
 
-        const groundMat = new BABYLON.PBRMaterial("groundMat", scene);
-        groundMat.twoSidedLighting = true;
-        groundMat.backFaceCulling = false;
-        groundMat.albedoColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-        groundMat.roughness = 0.8;
-        groundMat.metallic = 0.0;
+            meshesByType.Wood = [];
+            meshesByType.Metal = [];
+            meshesByType.Glass = [];
 
-        ground.material = groundMat;
-        ground.position.y = groundY - 0.002;
-        ground.receiveShadows = true;
+            meshes.forEach(mesh => {
+                if (!mesh.getTotalVertices || mesh.getTotalVertices() === 0) return;
+                mesh.freezeWorldMatrix();
+                mesh.doNotSyncBoundingInfo = true;
+                mesh.isPickable = false;
+                shadowGenerator.addShadowCaster(mesh);
+                mesh.receiveShadows = true;
 
-        meshesByType.Wood = [];
-        meshesByType.Metal = [];
-        meshesByType.Glass = [];
-
-        meshes.forEach(mesh => {
-            if (!mesh.getTotalVertices || mesh.getTotalVertices() === 0) return;
-
-            // Optymalizacja CPU: Zatrzymujemy odświeżanie statycznych obiektów
-            mesh.freezeWorldMatrix();
-            mesh.doNotSyncBoundingInfo = true;
-            mesh.isPickable = false;
-
-            shadowGenerator.addShadowCaster(mesh);
-            mesh.receiveShadows = true;
-
-            if (mesh.material) {
-                const matName = mesh.material.name ? mesh.material.name.toLowerCase() : "";
-                const objName = mesh.name ? mesh.name.toLowerCase() : "";
-
-                let typeKey = null;
-                if (matName.includes("metal")) typeKey = "Metal";
-                else if (matName.includes("glass") || matName.includes("szkło")) typeKey = "Glass";
-                else if (matName.includes("wood") || matName.includes("drewno")) typeKey = "Wood";
-
-                if (!typeKey) {
-                    if (objName.includes("metal")) typeKey = "Metal";
-                    else if (objName.includes("glass") || objName.includes("szklo")) typeKey = "Glass";
-                    else if (objName.includes("wood") || objName.includes("drewno")) typeKey = "Wood";
+                if (mesh.material) {
+                    const matName = mesh.material.name ? mesh.material.name.toLowerCase() : "";
+                    const objName = mesh.name ? mesh.name.toLowerCase() : "";
+                    let typeKey = null;
+                    if (matName.includes("metal")) typeKey = "Metal";
+                    else if (matName.includes("glass") || matName.includes("szkło")) typeKey = "Glass";
+                    else if (matName.includes("wood") || matName.includes("drewno")) typeKey = "Wood";
+                    if (!typeKey) {
+                        if (objName.includes("metal")) typeKey = "Metal";
+                        else if (objName.includes("glass") || objName.includes("szklo")) typeKey = "Glass";
+                        else if (objName.includes("wood") || objName.includes("drewno")) typeKey = "Wood";
+                    }
+                    if (typeKey) meshesByType[typeKey].push(mesh);
                 }
+            });
 
-                if (typeKey) {
-                    meshesByType[typeKey].push(mesh);
+            ['Wood', 'Metal', 'Glass'].forEach(type => {
+                if (meshesByType[type].length === 0) return;
+                const firstMat = meshesByType[type][0].material;
+                if (!firstMat) return;
+                activeMaterials[type] = firstMat;
+
+                if (modelDetails.ao && activeMaterials[type] instanceof BABYLON.PBRMaterial) {
+                    const aoTex = getOrCreateTexture(modelDetails.ao);
+                    aoTex.invertY = false;
+                    activeMaterials[type].ambientTexture = aoTex;
                 }
+                setTimeout(() => {
+                    if (firstMat && !pristineMaterials[type]) {
+                        pristineMaterials[type] = firstMat.clone(firstMat.name + "_pristine");
+                    }
+                }, 2000);
+            });
+
+            // MODEL GOTOWY – ustawiamy 100% i chowamy overlay
+            updateLoadingProgress(100);
+
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.style.display = 'none', 300);
             }
-        });
 
-        // Przypisanie referencji BEZ natychmiastowego klonowania (eliminacja zwiechy)
-        ['Wood', 'Metal', 'Glass'].forEach(type => {
-            if (meshesByType[type].length === 0) return;
+            applyDefaultTextures();
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    preloadAllTexturesInTheBackground();
+                }, 500);
+            });
+        },
 
-            const firstMat = meshesByType[type][0].material;
-            if (!firstMat) return;
-
-            // Używamy materiału bezpośrednio z GLB jako aktywnego na starcie
-            activeMaterials[type] = firstMat;
-
-            if (modelDetails.ao && activeMaterials[type] instanceof BABYLON.PBRMaterial) {
-                const aoTex = getOrCreateTexture(modelDetails.ao);
-                aoTex.invertY = false;
-                activeMaterials[type].ambientTexture = aoTex;
+        // --- onProgress (NOWOŚĆ) ---
+        (evt) => {
+            if (evt.lengthComputable) {
+                modelProgress(evt.loaded, evt.total);
             }
+        },
 
-            // Klonowanie do celów przywracania domyślnego robimy w tle poźniej
-            setTimeout(() => {
-                if (firstMat && !pristineMaterials[type]) {
-                    pristineMaterials[type] = firstMat.clone(firstMat.name + "_pristine");
-                }
-            }, 2000);
-        });
-
-        // Błyskawiczne zdjęcie overlaya – model renderuje się natychmiast z mockupem
-        document.getElementById('loading-overlay').style.opacity = '0';
-        setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
-
-        applyDefaultTextures();
-
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                preloadAllTexturesInTheBackground();
-            }, 500);
-        });
-    });
+        // --- onError ---
+        (scene, message, exception) => {
+            console.error("Błąd ładowania modelu:", message, exception);
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.style.display = 'none', 300);
+            }
+        }
+    );
 }
 
 // Budowanie dynamicznych dropdownów uzależnionych od obecności w modelu
