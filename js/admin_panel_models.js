@@ -25,6 +25,46 @@ async function initModelsTab() {
     renderModelsUI();
     await populateProductsDropdown();
     attachModelFormEvents();
+    attachRefreshButtonEvent();
+}
+function attachRefreshButtonEvent() {
+    const refreshBtn = document.getElementById('REFRESH_ALL_MODELS_DATA');
+    if (!refreshBtn) return;
+
+    refreshBtn.addEventListener('click', async () => {
+        // Opcjonalnie: zabezpieczenie przed wielokrotnym kliknięciem
+        refreshBtn.disabled = true;
+        originalText = refreshBtn.textContent;
+        refreshBtn.textContent = '⏳ Odświeżanie...';
+
+        try {
+            const response = await fetch('/api/model_ops/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer ${currentUser.token}` // odkomentuj, jeśli wymagane
+                },
+                body: JSON.stringify({}), // Przesyłamy pusty obiekt JSON, co wymusi nagłówek
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(errText || `Błąd serwera (Status: ${response.status})`);
+            }
+
+            const data = await response.json().catch(() => ({}));
+            console.log("Dane modeli zostały pomyślnie odświeżone przez proxy:", data);
+            alert('✅ Dane modeli zostały pomyślnie odświeżone!');
+
+        } catch (error) {
+            console.error("[Models Tab] Błąd podczas odświeżania modeli:", error);
+            alert(`❌ Nie udało się odświeżyć modeli: ${error.message}`);
+        } finally {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = 'Aktualizuj dane modeli';
+        }
+    });
 }
 
 /**
@@ -37,7 +77,10 @@ function renderModelsUI() {
     tabModels.innerHTML = `
         <div class="admin-container">
             <div class="products-list-panel">
-                <h3>🧊 Wybierz Produkt dla Modeli 3D</h3>
+                <div>
+                    <h3>🧊 Wybierz Produkt dla Modeli 3D</h3>
+                    <button id="REFRESH_ALL_MODELS_DATA">Aktualizuj dane modeli</button>
+                </div>
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="m_product_select"><b>Produkt docelowy:</b></label>
                     <select id="m_product_select" style="width: 100%; padding: 8px; font-size: 14px; margin-top: 5px;">

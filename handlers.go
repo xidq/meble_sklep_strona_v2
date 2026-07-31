@@ -209,6 +209,13 @@ func adminUsersProxyHandler(w http.ResponseWriter, r *http.Request) {
 	targetPath := strings.Replace(r.URL.Path, "/api/admin", "/admin", 1)
 	forwardToRust(w, r, r.Method, targetPath, true, nil)
 }
+func getModelsRefreshHandler(w http.ResponseWriter, r *http.Request) {
+
+	targetPath := strings.Replace(r.URL.Path, "/api/model_ops", "/api/models", 1)
+	//targetPath := strings.TrimPrefix(r.URL.Path, "/api/admin/check_response")
+
+	forwardToRust(w, r, r.Method, targetPath, true, nil)
+}
 func adminResponseCheckProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// r.URL.Path będzie wynosić np. "/admin/usr" lub "/admin/usr/Janusz"
 	// Przekazujemy dokładnie tę samą ścieżkę do Rusta

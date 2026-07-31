@@ -149,6 +149,9 @@ func main() {
 	// Zapewne masz coś w tym stylu (mux, chi, lub standardowy http.ServeMux):
 	apiMux.HandleFunc("/api/products", getProductsProxyHandler)  // <-- Dla POST/GET
 	apiMux.HandleFunc("/api/products/", getProductsProxyHandler) // <-- Dla PUT/DELETE z ID
+	apiMux.HandleFunc("/api/model_ops", authMiddleware("Admin")(getModelsRefreshHandler))
+	apiMux.HandleFunc("/api/model_ops/", authMiddleware("Admin")(getModelsRefreshHandler))
+	apiMux.HandleFunc("/api/model_ops/refresh", authMiddleware("Admin")(getModelsRefreshHandler))
 	// Endpointy zwrotne, międzyserwerowe
 	apiMux.HandleFunc("/api/produkty/", rustFilesUploadHandler)
 	apiMux.HandleFunc("/api/upload/json/", rustJsonUploadHandler)
