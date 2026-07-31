@@ -50,7 +50,9 @@ function attachRefreshButtonEvent() {
 
             if (!response.ok) {
                 const errText = await response.text();
-                throw new Error(errText || `Błąd serwera (Status: ${response.status})`);
+                console.error("[Models Tab] Błąd podczas odświeżania modeli:", errText);
+                alert(`❌ Nie udało się odświeżyć modeli: ${errText || `Błąd serwera (Status: ${response.status})`}`);
+                return;
             }
 
             const data = await response.json().catch(() => ({}));
@@ -126,8 +128,11 @@ async function populateProductsDropdown() {
 
     try {
         const response = await fetch("/api/getproducts", { credentials: 'include' });
-        if (!response.ok) throw new Error(`Błąd pobierania produktów (Status: ${response.status})`);
-
+        if (!response.ok) {
+            console.error(`[Models Tab] Błąd pobierania produktów (Status: ${response.status})`);
+            selectEl.innerHTML = '<option value="">Błąd podczas ładowania produktów!</option>';
+            return;
+        }
         const products = await response.json();
 
         selectEl.innerHTML = '<option value="">-- Wybierz produkt z listy --</option>';
@@ -297,7 +302,10 @@ function attachModelFormEvents() {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(errorText || `Status serwera: ${response.status}`);
+                console.error("[Models Tab] Błąd przesyłania:", errorText);
+                statusDiv.style.color = '#dc3545';
+                statusDiv.textContent = `❌ Wystąpił błąd podczas przesyłania: ${errorText || `Status serwera: ${response.status}`}`;
+                return;
             }
 
             const data = await response.json().catch(() => ({}));
