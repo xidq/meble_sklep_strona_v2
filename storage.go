@@ -19,12 +19,13 @@ type RouterItem struct {
 	Img     *string `json:"img"`
 	Model   *string `json:"model"`
 }
-type ModelPayload struct {
-	NameID string  `json:"name_id"`
-	Wood   float64 `json:"wood"`
-	Metal  float64 `json:"metal"`
-	Glass  float64 `json:"glass"`
-}
+
+//type ModelPayload struct {
+//	NameID string  `json:"name_id"`
+//	Wood   float64 `json:"wood"`
+//	Metal  float64 `json:"metal"`
+//	Glass  float64 `json:"glass"`
+//}
 
 // // rebuildRouterJson skanuje katalogi i tworzy centralny plik mapowania map.json / router.json
 //
@@ -109,7 +110,7 @@ type ModelPayload struct {
 //			return
 //		}
 //
-//		var data interface{}
+//		var data any
 //		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 //			log.Printf("[Sync ERROR] Błąd dekodowania JSON z Rusta: %v", err)
 //			return
@@ -143,9 +144,9 @@ type ModelPayload struct {
 // // fixPathsAndClean czyści product_id i mapuje ścieżki plików w głąb całego JSON-a
 // // 2. Zmiana: Usunięcie "/" ze ścieżek podmienianych w locie (sygnatura zostaje bez zmian)
 //
-//	func fixPathsAndClean(data interface{}, modyfikator, typ string) interface{} {
+//	func fixPathsAndClean(data any, modyfikator, typ string) any {
 //		switch v := data.(type) {
-//		case map[string]interface{}:
+//		case map[string]any:
 //			delete(v, "product_id")
 //
 //			for key, val := range v {
@@ -161,7 +162,7 @@ type ModelPayload struct {
 //			}
 //			return v
 //
-//		case []interface{}:
+//		case []any:
 //			for i, val := range v {
 //				v[i] = fixPathsAndClean(val, modyfikator, typ)
 //			}
@@ -284,7 +285,7 @@ type ModelPayload struct {
 //			folderType = "model"
 //		}
 //
-//		var rawData interface{}
+//		var rawData any
 //		if err := json.NewDecoder(r.Body).Decode(&rawData); err != nil {
 //			http.Error(w, "Niepoprawny format danych JSON", http.StatusBadRequest)
 //			return
@@ -404,7 +405,7 @@ func syncProductData(nameID string) {
 		return
 	}
 
-	var data interface{}
+	var data any
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Printf("[Sync ERROR] Błąd dekodowania JSON z Rusta: %v", err)
 		return
@@ -434,9 +435,9 @@ func syncProductData(nameID string) {
 
 var pathRegex = regexp.MustCompile(`src/api/+/products/[^/]+/(images|models)/`)
 
-func fixPathsAndClean(data interface{}, modyfikator, typ string) interface{} {
+func fixPathsAndClean(data any, modyfikator, typ string) any {
 	switch v := data.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		delete(v, "product_id")
 
 		for key, val := range v {
@@ -451,7 +452,7 @@ func fixPathsAndClean(data interface{}, modyfikator, typ string) interface{} {
 		}
 		return v
 
-	case []interface{}:
+	case []any:
 		for i, val := range v {
 			v[i] = fixPathsAndClean(val, modyfikator, typ)
 		}
@@ -614,7 +615,7 @@ func rustJsonUploadHandler(w http.ResponseWriter, r *http.Request) {
 		folderType = "model"
 	}
 
-	var rawData interface{}
+	var rawData any
 	if err := json.NewDecoder(r.Body).Decode(&rawData); err != nil {
 		http.Error(w, "Niepoprawny format danych JSON", http.StatusBadRequest)
 		return
@@ -640,8 +641,8 @@ func rustJsonUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Jeśli to model, próbujemy odczytać istniejący plik (z wygenerowanymi ścieżkami)
 	// i dopisać do niego odebrane dane (wood, metal, glass).
 	if folderType == "model" {
-		if incomingMap, ok := processedData.(map[string]interface{}); ok {
-			existingData := make(map[string]interface{})
+		if incomingMap, ok := processedData.(map[string]any); ok {
+			existingData := make(map[string]any)
 
 			// Odczytujemy plik wygenerowany wcześniej przez rustFilesUploadHandler
 			if existingBytes, err := os.ReadFile(targetFilePath); err == nil {
@@ -684,4 +685,176 @@ func rustJsonUploadHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Write error: %v", err)
 		return
 	}
+}
+func syncAllDataHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Wyciągamy kategorię z URL, np. /api/sync/all/models -> "models"
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 4 {
+		http.Error(w, "Nieprawidłowa ścieżka", http.StatusBadRequest)
+		return
+	}
+	category := parts[3]
+
+	// 1. Budujemy adres do Twojego backendu (zakładam endpoint Rusta typu /api/models/all lub /api/images/all)
+	rustURL := fmt.Sprintf("https://%s:%s/api/admin/sync/%s", config.RustHost, config.RustPort, category)
+
+	// Jeśli Rust też wymaga endpointu z np. /all to zmodyfikuj rustURL powyżej:
+	// rustURL := fmt.Sprintf("https://%s:%s/api/%s/all", config.RustHost, config.RustPort, category)
+
+	req, err := http.NewRequest(http.MethodGet, rustURL, nil)
+	if err != nil {
+		http.Error(w, "Błąd budowania zapytania", http.StatusInternalServerError)
+		return
+	}
+
+	// Kopiujemy token z ciasteczek/nagłówków Go, by Rust wiedział, że to autoryzowane polecenie
+	token := extractAuthToken(r)
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	// 2. Pobieramy Vec<Data> z Rusta (listę wszystkich jsonów)
+	resp, err := insecureHTTPClient.Do(req)
+	if err != nil {
+		log.Printf("[Sync All] Błąd komunikacji z Rustem dla %s: %v", category, err)
+		http.Error(w, "Błąd komunikacji z backendem", http.StatusBadGateway)
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("[Storage] Error closing body: %v", err)
+		}
+	}(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[Sync All] Rust zwrócił błąd %d dla kategorii %s", resp.StatusCode, category)
+		http.Error(w, "Błąd pobierania danych", http.StatusBadGateway)
+		return
+	}
+
+	// Dekodujemy spłaszczoną tablicę (zakładamy, że Rust wysyła JSON w formie [{...}, {...}])
+	var dataList []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&dataList); err != nil {
+		log.Printf("[Sync All] Błąd dekodowania JSON: %v", err)
+		http.Error(w, "Nieprawidłowy format JSON", http.StatusInternalServerError)
+		return
+	}
+
+	// 3. Uniwersalne mapowanie folderów i nazw plików (w oparciu o Twój obecny mechanizm)
+	folderType := category
+	switch folderType {
+	case "images", "img":
+		folderType = "img"
+	case "models", "model":
+		folderType = "model"
+	}
+
+	fileName := "dane.json"
+	if folderType == "model" {
+		fileName = "model.json"
+	}
+
+	// 4. Przetwarzanie i zapisywanie każdego rekordu
+	for _, item := range dataList {
+		nameID, ok := item["name_id"].(string)
+		if !ok || nameID == "" {
+			continue
+		}
+
+		processedData := fixPathsAndClean(item, nameID, folderType)
+
+		targetDir := filepath.Join(config.DataDir, "products", nameID, folderType)
+		if err := os.MkdirAll(targetDir, 0755); err != nil {
+			log.Printf("[Sync All] Błąd tworzenia katalogu dla %s: %v", nameID, err)
+			continue
+		}
+
+		// ==================== OTO TUTAJ ====================
+		if folderType == "model" {
+			if incomingMap, ok := processedData.(map[string]any); ok {
+				// Automatycznie skanuje katalog, buduje ścieżki LOD z nullami i dodaje dane (wood, metal...)
+				processedData = mergeModelFilesAndData(nameID, targetDir, incomingMap)
+			}
+		}
+		// ====================================================
+
+		fileBytes, err := json.MarshalIndent(processedData, "", "  ")
+		if err != nil {
+			log.Printf("[Sync All] Błąd serializacji JSON dla %s: %v", nameID, err)
+			continue
+		}
+
+		if err := os.WriteFile(filepath.Join(targetDir, fileName), fileBytes, 0644); err != nil {
+			log.Printf("[Sync All] Błąd zapisu pliku %s dla %s: %v", fileName, nameID, err)
+		}
+	}
+
+	rebuildRouterJson()
+
+	log.Printf("[Sync All] Zakończono synchronizację dla kategorii: %s (zaktualizowano %d elementów)", category, len(dataList))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte(fmt.Sprintf(`{"status":"success", "message":"Zsynchronizowano kategorię %s"}`, category))); err != nil {
+		return
+	}
+}
+
+// mergeModelFilesAndData skanuje katalog modelu, wykrywa pliki LOD/AO,
+// wstawia null dla brakujących LOD-ów i scala to z danymi z Rusta.
+func mergeModelFilesAndData(nameID, targetDir string, incomingMap map[string]any) map[string]any {
+	// Domyślne klucze - jeśli plik nie zostanie znaleziony, w JSON pojawi się null
+	result := map[string]any{
+		"LOD0":       nil,
+		"LOD1":       nil,
+		"LOD2":       nil,
+		"LOD3":       nil,
+		"ao_texture": nil,
+	}
+
+	// 1. Odczytujemy pliki z fizycznego katalogu
+	entries, err := os.ReadDir(targetDir)
+	if err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+
+			fileName := entry.Name()
+			ext := strings.ToLower(filepath.Ext(fileName))
+			baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+			upperBase := strings.ToUpper(baseName)
+
+			relPath := fmt.Sprintf("data/products/%s/model/%s", nameID, fileName)
+
+			// Wykrywanie modeli 3D i poziomów LOD
+			if ext == ".glb" || ext == ".gltf" {
+				for i := 0; i <= 3; i++ {
+					lodKey := fmt.Sprintf("LOD%d", i)
+					if strings.HasSuffix(upperBase, lodKey) {
+						result[lodKey] = relPath
+						break
+					}
+				}
+			} else if ext == ".dds" || strings.Contains(strings.ToLower(baseName), "ao") {
+				// Wykrywanie tekstury Ambient Occlusion
+				result["ao_texture"] = relPath
+			}
+		}
+	}
+
+	// 2. Scalamy wartości z Rusta (wood, metal, glass itp.), pomijając name_id
+	for key, val := range incomingMap {
+		if key != "name_id" {
+			result[key] = val
+		}
+	}
+
+	return result
 }

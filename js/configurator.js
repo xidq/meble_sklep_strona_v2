@@ -31,6 +31,24 @@ let activeSelections = {
     Metal: null,
     Glass: null
 };
+const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+const CONFIG = isMobile ? {
+    shadowMapSize: 1024,
+    bloomKernel: 16,
+    motionBlurSamples: 8,
+    fxaaEnabled: false,
+    samples: 1,
+    tekstury: "2k",
+    modele: "LOD1", // Zmieniaj tutaj na LOD0, LOD1, LOD2 itp.
+} : {
+    shadowMapSize: 2048,
+    bloomKernel: 64,
+    motionBlurSamples: 16,
+    fxaaEnabled: true,
+    samples: 8,
+    tekstury: "2k",
+    modele: "LOD1",
+};
 
 // Klasyfikacja meshy według typu
 const meshesByType = {
@@ -124,23 +142,25 @@ function initBabylon() {
     const canvas = document.getElementById("renderCanvas");
     canvas.style.filter = "blur(0.2px)";
 
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    // const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    const CONFIG = isMobile ? {
-        shadowMapSize: 1024,
-        bloomKernel: 16,
-        motionBlurSamples: 8,
-        fxaaEnabled: false,
-        samples: 1,
-        tekstury: "2k",
-    } : {
-        shadowMapSize: 2048,
-        bloomKernel: 64,
-        motionBlurSamples: 16,
-        fxaaEnabled: true,
-        samples: 8,
-        tekstury: "2k",
-    };
+    // const CONFIG = isMobile ? {
+    //     shadowMapSize: 1024,
+    //     bloomKernel: 16,
+    //     motionBlurSamples: 8,
+    //     fxaaEnabled: false,
+    //     samples: 1,
+    //     tekstury: "2k",
+    //     modele: "LOD1",
+    // } : {
+    //     shadowMapSize: 2048,
+    //     bloomKernel: 64,
+    //     motionBlurSamples: 16,
+    //     fxaaEnabled: true,
+    //     samples: 8,
+    //     tekstury: "2k",
+    //     modele: "LOD1",
+    // };
 
     activeWoodTextureResolution = CONFIG.tekstury;
 
@@ -261,13 +281,35 @@ async function startConfigurator() {
 
         updateLoadingProgress(40); // dane gotowe
 
+        // let modelJson = Array.isArray(modelJsonRaw) ? modelJsonRaw[0] : modelJsonRaw;
+        // const currentLang = localStorage.getItem('user-lang') || 'pl';
+        // document.getElementById('model-title').innerText = productData[`name_${currentLang}`] || productData.name_pl || productData.name_id;
         let modelJson = Array.isArray(modelJsonRaw) ? modelJsonRaw[0] : modelJsonRaw;
         const currentLang = localStorage.getItem('user-lang') || 'pl';
         document.getElementById('model-title').innerText = productData[`name_${currentLang}`] || productData.name_pl || productData.name_id;
 
+        // --- DOBIERANIE ŚCIEŻKI MODELU NA PODSTAWIE CONFIG.modele ---
+        const preferredLod = CONFIG.modele; // np. "LOD1"
+
+        // 1. Sprawdzamy czy dany LOD istnieje w JSON i nie jest null/pusty
+        let selectedGlbPath = modelJson[preferredLod];
+
+        // 2. Fallback: jeśli preferowany LOD jest null, szukamy pierwszego dostępnego (LOD0 -> LOD1 -> LOD2 -> LOD3 -> model)
+        if (!selectedGlbPath) {
+            const lodOrder = ["LOD0", "LOD1", "LOD2", "LOD3", "model"];
+            for (const lodKey of lodOrder) {
+                if (modelJson[lodKey]) {
+                    selectedGlbPath = modelJson[lodKey];
+                    break;
+                }
+            }
+        }
+
+        // 3. Fallback dla tekstury AO (obsługuje klucze ao_texture oraz ao)
+        const selectedAoPath = modelJson.ao_texture || modelJson.ao || null;
         selectedModelDetails = {
-            model: modelJson.model,
-            ao: modelJson.ao,
+            model: selectedGlbPath,
+            ao: selectedAoPath,
             texture_scale: modelJson.wood || 1.0,
             basePrice: parseFloat(productData.price) || 0,
             mkw: parseFloat(modelJson.wood ?? productData.wood) || 1.0,
@@ -280,7 +322,13 @@ async function startConfigurator() {
         glassMaterialsData = glassRaw.map(item => ({...item, price: item.cena || item.price}));
 
         buildMaterialDropdowns();
-        loadGlbModel(selectedModelDetails.model, selectedModelDetails);
+        // loadGlbModel(selectedModelDetails.model, selectedModelDetails);
+        if (selectedModelDetails.model) {
+            loadGlbModel(selectedModelDetails.model, selectedModelDetails);
+        } else {
+            console.error("Brak dostępnego pliku pliku .glb w pliku JSON dla podanego modelu.");
+            if (overlay) overlay.style.display = 'none';
+        }
 
     } catch (err) {
         console.error("Błąd krytyczny konfiguratora:", err);

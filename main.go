@@ -153,6 +153,7 @@ func main() {
 	apiMux.HandleFunc("/api/model_ops/", authMiddleware("Admin")(getModelsRefreshHandler))
 	apiMux.HandleFunc("/api/model_ops/refresh", authMiddleware("Admin")(getModelsRefreshHandler))
 	// Endpointy zwrotne, międzyserwerowe
+	apiMux.HandleFunc("/api/sync/all/", authMiddleware("Admin")(syncAllDataHandler))
 	apiMux.HandleFunc("/api/produkty/", rustFilesUploadHandler)
 	apiMux.HandleFunc("/api/upload/json/", rustJsonUploadHandler)
 	apiMux.HandleFunc("/api/products/by-name/", getProductByNameIdProxyHandler)
