@@ -22,7 +22,7 @@ Client Browser
       ▼
 ┌─────────────────────────────────────────┐
 │         Go Frontend Server              │
-│  (Port WWW: 443, API: 8444)             │
+│  (Port WWW: 8443, API: 8444)            │
 │                                         │
 │  ┌────────────┐   ┌──────────────────┐  │
 │  │ Static     │   │   API Proxy      │  │
@@ -37,7 +37,6 @@ Client Browser
       ▼
 ┌─────────────────────────────────────────┐
 │         Rust Backend                    │
-│  (Port: 8444)                           │
 │                                         │
 │  - Product Management                   │
 │  - Order Processing                     │
@@ -140,15 +139,15 @@ Client Browser
 
 ### Environment Variables
 
-Create a `.env` file with the following configuration:
+Create a `.env` file with configuration:
 
 ```
-JWT_SECRET_KEY=your_jwt_secret_key
-RUST_HOST=127.0.0.1
-RUST_PORT=8444
-ADRES_WWW=127.0.0.1
-PORT_WWW=443
-PORT_API=8444
+JWT_SECRET_KEY= {your_jwt_secret_key}
+RUST_HOST= {ip without port}
+RUST_PORT= {port}
+ADRES_WWW= {ip}
+PORT_WWW= {port www}
+PORT_API= {port api}
 STATIC_DIR=./static
 PAGES_DIR=./pages
 DATA_DIR=./data
