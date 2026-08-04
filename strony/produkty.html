@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Katalog produktów w naszym sklepie. Przeglądaj unikalne meble i dekoracje z opcją konfiguracji 3D.">
     <title data-i18n="nav_products">Title</title>
     <link rel="stylesheet" href="/css/header.css">
     <link rel="stylesheet" href="/css/gallery.css">
@@ -11,24 +12,28 @@
     <script src="/js/lang.js" defer></script>
 </head>
 <body>
-<div class="gallery-container" id="MAIN">
+<main class="gallery-container" id="MAIN">
     <div class="gallery-grid" id="galleryGrid">
     </div>
-</div>
+</main>
 
 <script>
     const grid = document.getElementById('galleryGrid');
 
     async function loadGallery() {
         try {
-            // 1. Równoległe pobranie routera i API produktów
             const [routerResponse, apiProductsResponse] = await Promise.all([
                 fetch('/data/router.json'),
                 fetch('/api/products')
             ]);
 
-            if (!routerResponse.ok) throw new Error('Błąd routera: ' + routerResponse.statusText);
-            if (!apiProductsResponse.ok) throw new Error('Błąd API produktów: ' + apiProductsResponse.statusText);
+            // if (!routerResponse.ok) throw new Error('Błąd routera: ' + routerResponse.statusText);
+            // if (!apiProductsResponse.ok) throw new Error('Błąd API produktów: ' + apiProductsResponse.statusText);
+            if (!routerResponse.ok || !apiProductsResponse.ok) {
+                console.warn('Nie udało się pobrać danych początkowych galerii.');
+                grid.innerHTML = `<p style="color: red; padding: 20px;">Błąd ładowania galerii. Spróbuj odświeżyć stronę.</p>`;
+                return;
+            }
 
             const [routerData, apiProductsData] = await Promise.all([
                 routerResponse.json(),
@@ -38,59 +43,90 @@
             const productsMap = new Map(apiProductsData.map(prod => [prod.name_id, prod]));
             const currentLang = localStorage.getItem('user-lang') || 'pl';
 
-            // 2. Pobranie danych obrazków w tle z zachowaniem struktury
-            const itemsData = await Promise.all(routerData.map(async (item) => {
-                const apiProduct = productsMap.get(item.id);
-                if (!apiProduct || !item.img) return null;
-
-                try {
-                    const resImg = await fetch('/' + item.img);
-                    if (!resImg.ok) return null;
-                    const imgData = await resImg.json();
-                    return { item, apiProduct, imgData };
-                } catch (err) {
-                    console.error(`Błąd ładowania obrazka dla ${item.id}:`, err);
-                    return null;
-                }
-            }));
-
-            // 3. Renderowanie hurtowe za pomocą DocumentFragment (Single DOM Mutation)
             const fragment = document.createDocumentFragment();
+            const observerTargets = [];
 
-            itemsData.forEach(data => {
-                if (!data) return;
-                const { item, apiProduct, imgData } = data;
+            routerData.forEach((item) => {
+                const apiProduct = productsMap.get(item.id);
+                if (!apiProduct || !item.img) return;
 
                 const itemAnchor = document.createElement('a');
                 itemAnchor.href = `item.html?id=${item.id}`;
                 itemAnchor.className = 'gallery-item glow';
 
-                const p256 = imgData.var_1["256"];
-                const p512 = imgData.var_1["512"];
                 const initialName = currentLang === 'en' ? apiProduct.name_en : apiProduct.name_pl;
 
+
+                itemAnchor.setAttribute('aria-label', initialName);
                 itemAnchor.innerHTML = `
-                    <img
-                        src="${p256}"
-                        srcset="${p256} 256w, ${p512} 512w"
-                        sizes="(min-width: 2000px) 512px, 256px"
-                        alt="${initialName}"
-                        loading="lazy"
-                        decoding="async"
-                    >
+                    <div class="img-placeholder" style="width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; color: #aaa; background: rgba(0,0,0,0.03);">Ładowanie...</div>
                     <div class="overlay product-title" data-name-pl="${apiProduct.name_pl}" data-name-en="${apiProduct.name_en}">${initialName}</div>
                 `;
 
                 fragment.appendChild(itemAnchor);
+
+                observerTargets.push({ element: itemAnchor, item, apiProduct });
             });
 
-            // Wstawiamy cały fragment do DOM jednorazowo
             grid.appendChild(fragment);
 
-            // Podpięcie tłumaczeń
             if (typeof setLanguage === 'function') {
                 setLanguage(currentLang);
             }
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '300px',
+                threshold: 0.01
+            };
+
+            const observer = new IntersectionObserver(async (entries, observerInstance) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        const targetCard = entry.target;
+                        observerInstance.unobserve(targetCard);
+
+                        const targetData = observerTargets.find(t => t.element === targetCard);
+                        if (!targetData) continue;
+
+                        const { item, apiProduct } = targetData;
+
+                        try {
+                            const resImg = await fetch('/' + item.img);
+                            if (!resImg.ok) continue;
+                            const imgData = await resImg.json();
+
+
+
+                            const p256 = imgData.var_1 && imgData.var_1["256"] ? imgData.var_1["256"] : '';
+                            const p512 = imgData.var_1 && imgData.var_1["512"] ? imgData.var_1["512"] : p256;
+                            const p1024 = imgData.var_1 && imgData.var_1["1024"] ? imgData.var_1["1024"] : p512;
+                            const currentLangNow = localStorage.getItem('user-lang') || 'pl';
+                            const initialName = currentLangNow === 'en' ? apiProduct.name_en : apiProduct.name_pl;
+
+                            targetCard.innerHTML = `
+                                <img
+                                    src="${p512}"
+                                    srcset="${p512} 512w, ${p1024} 1024w"
+                                    sizes="(min-width: 2000px) 1024px, 512px"
+                                    alt="${initialName}"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                                <div class="overlay product-title" data-name-pl="${apiProduct.name_pl}" data-name-en="${apiProduct.name_en}">${initialName}</div>
+                            `;
+                        } catch (err) {
+                            console.error(`Błąd dociągania obrazka dla ${item.id}:`, err);
+                            const placeholder = targetCard.querySelector('.img-placeholder');
+                            if (placeholder) placeholder.textContent = 'Błąd ładowania';
+                        }
+                    }
+                }
+            }, observerOptions);
+
+            observerTargets.forEach(target => {
+                observer.observe(target.element);
+            });
 
         } catch (error) {
             console.error('Błąd podczas ładowania galerii:', error);
@@ -99,7 +135,6 @@
     }
 
     loadGallery();
-</script>
 </script>
 <script>
     window.addEventListener("wheel", function (e) {

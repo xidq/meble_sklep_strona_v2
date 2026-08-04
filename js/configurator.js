@@ -1,4 +1,5 @@
-/* global BABYLON */
+/* global BABYLON, updateBasketDOM */
+
 /** @type {import('babylonjs').Engine} */
 let engine;
 /** @type {import('babylonjs').Scene} */
@@ -7,6 +8,7 @@ let scene;
 let camera;
 /** @type {import('babylonjs').ShadowGenerator} */
 let shadowGenerator;
+
 
 let loadedMeshes = [];
 let selectedModelDetails = null;
@@ -17,17 +19,35 @@ let metalMaterialsData = [];
 let glassMaterialsData = [];
 
 // Przechowalnia referencji do oryginalnych materiałów z pliku GLB
-let defaultMaterials = {
-    Wood: null,
-    Metal: null,
-    Glass: null
-};
+// let defaultMaterials = {
+//     Wood: null,
+//     Metal: null,
+//     Glass: null
+// };
 let activeWoodTextureResolution = "4k";
 
 let activeSelections = {
     Wood: null,
     Metal: null,
     Glass: null
+};
+const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+const CONFIG = isMobile ? {
+    shadowMapSize: 1024,
+    bloomKernel: 16,
+    motionBlurSamples: 8,
+    fxaaEnabled: false,
+    samples: 1,
+    tekstury: "2k",
+    modele: "LOD1", // Zmieniaj tutaj na LOD0, LOD1, LOD2 itp.
+} : {
+    shadowMapSize: 2048,
+    bloomKernel: 64,
+    motionBlurSamples: 16,
+    fxaaEnabled: true,
+    samples: 8,
+    tekstury: "2k",
+    modele: "LOD1",
 };
 
 // Klasyfikacja meshy według typu
@@ -51,6 +71,8 @@ const textureCache = new Map();
  * @param {{r: number, g: number, b: number}} k
  * @returns {Object}
  */
+
+
 function calculateConductorF0(n, k) {
     const calcChannel = (nVal, kVal) => {
         const nMinus1 = nVal - 1;
@@ -120,23 +142,25 @@ function initBabylon() {
     const canvas = document.getElementById("renderCanvas");
     canvas.style.filter = "blur(0.2px)";
 
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    // const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    const CONFIG = isMobile ? {
-        shadowMapSize: 1024,
-        bloomKernel: 16,
-        motionBlurSamples: 8,
-        fxaaEnabled: false,
-        samples: 1,
-        tekstury: "2k",
-    } : {
-        shadowMapSize: 2048,
-        bloomKernel: 64,
-        motionBlurSamples: 16,
-        fxaaEnabled: true,
-        samples: 8,
-        tekstury: "2k",
-    };
+    // const CONFIG = isMobile ? {
+    //     shadowMapSize: 1024,
+    //     bloomKernel: 16,
+    //     motionBlurSamples: 8,
+    //     fxaaEnabled: false,
+    //     samples: 1,
+    //     tekstury: "2k",
+    //     modele: "LOD1",
+    // } : {
+    //     shadowMapSize: 2048,
+    //     bloomKernel: 64,
+    //     motionBlurSamples: 16,
+    //     fxaaEnabled: true,
+    //     samples: 8,
+    //     tekstury: "2k",
+    //     modele: "LOD1",
+    // };
 
     activeWoodTextureResolution = CONFIG.tekstury;
 
@@ -154,34 +178,44 @@ function initBabylon() {
     camera.maxZ = 100.0;
 
     // --- OŚWIETLENIE I CIENIE ---
-    const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-2, -3, -1), scene);
-    dirLight.position = new BABYLON.Vector3(3, 9, 3);
-    dirLight.intensity = 4.5;
+    // const dirLight = new BABYLON.PointLight("dirLight", new BABYLON.Vector3(-2, -3, -1), scene);
+    const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-5, -9, -5), scene);
+
+    // dirLight.position = new BABYLON.Vector3(3, 9, 3);
+    dirLight.intensity = 3;
 
     dirLight.shadowMinZ = 0.1;
     dirLight.shadowMaxZ = 20;
+    // dirLight.autoCalcShadowZBounds = true;
 
-    shadowGenerator = new BABYLON.ShadowGenerator(CONFIG.shadowMapSize, dirLight);
-    shadowGenerator.usePercentageCloserFiltering = true;
+    shadowGenerator = new BABYLON.ShadowGenerator(CONFIG.shadowMapSize, dirLight, true);
+    shadowGenerator.useContactHardeningShadow = true;
+    // shadowGenerator.contactHardeningLightSizeUVRatio = 0.012;    // shadowGenerator.usePercentageCloserFiltering = true;
+
     shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
     shadowGenerator.bias = 0.001;
-    shadowGenerator.normalBias = 0.001;
+    shadowGenerator.normalBias = 0.01;
     shadowGenerator.darkness = 0.001;
     shadowGenerator.transparencyShadow = true;
 
     window.addEventListener("resize", () => { engine.resize(); });
 
     // Environment & Post-processing
-    const legacyEnv = new BABYLON.CubeTexture(
+    // const legacyEnv = new BABYLON.CubeTexture(
+    //     "/data/env/a",
+    //     scene,
+    //     ["_px.jpg", "_py.jpg", "_pz.jpg", "_nx.jpg", "_ny.jpg", "_nz.jpg"]
+    // );
+    //
+    // if (legacyEnv.updateLightingInfo) legacyEnv.updateLightingInfo();
+    // scene.environmentTexture = legacyEnv;
+    // scene.environmentIntensity = 1.0;
+    scene.environmentTexture = new BABYLON.CubeTexture(
         "/data/env/a",
         scene,
         ["_px.jpg", "_py.jpg", "_pz.jpg", "_nx.jpg", "_ny.jpg", "_nz.jpg"]
     );
-
-    if (legacyEnv.updateLightingInfo) legacyEnv.updateLightingInfo();
-    scene.environmentTexture = legacyEnv;
-    scene.environmentIntensity = 1.0;
-
+    /** @type {import('babylonjs').DefaultRenderingPipeline & { imageProcessing: BABYLON.ImageProcessingConfiguration }} */
     const pipeline = new BABYLON.DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
     pipeline.imageProcessingEnabled = true;
     pipeline.imageProcessing.toneMappingEnabled = true;
@@ -247,13 +281,35 @@ async function startConfigurator() {
 
         updateLoadingProgress(40); // dane gotowe
 
+        // let modelJson = Array.isArray(modelJsonRaw) ? modelJsonRaw[0] : modelJsonRaw;
+        // const currentLang = localStorage.getItem('user-lang') || 'pl';
+        // document.getElementById('model-title').innerText = productData[`name_${currentLang}`] || productData.name_pl || productData.name_id;
         let modelJson = Array.isArray(modelJsonRaw) ? modelJsonRaw[0] : modelJsonRaw;
         const currentLang = localStorage.getItem('user-lang') || 'pl';
         document.getElementById('model-title').innerText = productData[`name_${currentLang}`] || productData.name_pl || productData.name_id;
 
+        // --- DOBIERANIE ŚCIEŻKI MODELU NA PODSTAWIE CONFIG.modele ---
+        const preferredLod = CONFIG.modele; // np. "LOD1"
+
+        // 1. Sprawdzamy czy dany LOD istnieje w JSON i nie jest null/pusty
+        let selectedGlbPath = modelJson[preferredLod];
+
+        // 2. Fallback: jeśli preferowany LOD jest null, szukamy pierwszego dostępnego (LOD0 -> LOD1 -> LOD2 -> LOD3 -> model)
+        if (!selectedGlbPath) {
+            const lodOrder = ["LOD0", "LOD1", "LOD2", "LOD3", "model"];
+            for (const lodKey of lodOrder) {
+                if (modelJson[lodKey]) {
+                    selectedGlbPath = modelJson[lodKey];
+                    break;
+                }
+            }
+        }
+
+        // 3. Fallback dla tekstury AO (obsługuje klucze ao_texture oraz ao)
+        const selectedAoPath = modelJson.ao_texture || modelJson.ao || null;
         selectedModelDetails = {
-            model: modelJson.model,
-            ao: modelJson.ao,
+            model: selectedGlbPath,
+            ao: selectedAoPath,
             texture_scale: modelJson.wood || 1.0,
             basePrice: parseFloat(productData.price) || 0,
             mkw: parseFloat(modelJson.wood ?? productData.wood) || 1.0,
@@ -266,7 +322,13 @@ async function startConfigurator() {
         glassMaterialsData = glassRaw.map(item => ({...item, price: item.cena || item.price}));
 
         buildMaterialDropdowns();
-        loadGlbModel(selectedModelDetails.model, selectedModelDetails);
+        // loadGlbModel(selectedModelDetails.model, selectedModelDetails);
+        if (selectedModelDetails.model) {
+            loadGlbModel(selectedModelDetails.model, selectedModelDetails);
+        } else {
+            console.error("Brak dostępnego pliku pliku .glb w pliku JSON dla podanego modelu.");
+            if (overlay) overlay.style.display = 'none';
+        }
 
     } catch (err) {
         console.error("Błąd krytyczny konfiguratora:", err);
@@ -323,8 +385,12 @@ function loadGlbModel(glbUrl, modelDetails) {
             meshesByType.Metal = [];
             meshesByType.Glass = [];
 
-            meshes.forEach(mesh => {
+            meshes.forEach((meshOrig => {
+                /** @type {import('babylonjs').AbstractMesh} */
+                const mesh = meshOrig;
+
                 if (!mesh.getTotalVertices || mesh.getTotalVertices() === 0) return;
+
                 mesh.freezeWorldMatrix();
                 mesh.doNotSyncBoundingInfo = true;
                 mesh.isPickable = false;
@@ -345,7 +411,7 @@ function loadGlbModel(glbUrl, modelDetails) {
                     }
                     if (typeKey) meshesByType[typeKey].push(mesh);
                 }
-            });
+            }));
 
             ['Wood', 'Metal', 'Glass'].forEach(type => {
                 if (meshesByType[type].length === 0) return;
@@ -428,7 +494,7 @@ function buildMaterialDropdowns() {
         const select = document.createElement('select');
         select.className = 'texture-select';
         select.style.width = '100%';
-        select.innerHTML = `<option value="">-- Wybierz opcję (Domyślny) --</option>`;
+        // select.innerHTML = `<option value="">-- Wybierz opcję (Domyślny) --</option>`;
 
         if (slot.id === "Metal") {
             const noMetalOption = document.createElement('option');
@@ -488,10 +554,10 @@ function buildMaterialDropdowns() {
 
         if (slot.dataSource.length > 0) {
             if (slot.id === "Metal") {
-                select.selectedIndex = 2;
+                select.selectedIndex = 1;
                 activeSelections[slot.id] = slot.dataSource[0];
             } else {
-                select.selectedIndex = 1;
+                select.selectedIndex = 0;
                 activeSelections[slot.id] = slot.dataSource[0];
             }
         }
@@ -705,7 +771,7 @@ function applyPbrPropertiesToType(typeId, materialItem) {
 
         mat.subSurface.isRefractionEnabled = true;
         mat.subSurface.indexOfRefraction = mat.indexOfRefraction;
-        mat.subSurface.tintColor = isFrosted ? mat.albedoColor.clone() : mat.albedoColor.clone().scale(2.0);
+        mat.subSurface.tintColor = isFrosted ? mat.albedoColor.clone() : mat.albedoColor.clone(); //.scale(2.0)
         mat.alpha = isFrosted ? 0.8 : (1.0 - transVal);
         mat.transparencyMode = BABYLON.PBRMaterial.PBRMATERIAL_ALPHABLEND;
         mat.useAlphaFromAlbedoTexture = false;
@@ -828,7 +894,7 @@ function addConfiguredProductToCart() {
     } else {
         const badge = document.getElementById('basketCount');
         if (badge) {
-            badge.textContent = basket.reduce((sum, item) => sum + item.quantity, 0);
+            badge.textContent = basket.reduce((sum , item) => sum + item.quantity, 0).toString();
             badge.style.display = 'block';
         }
     }

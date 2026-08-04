@@ -7,9 +7,118 @@
     <link rel="stylesheet" href="/css/header.css">
     <link rel="stylesheet" href="/css/text.css">
     <style>
-        .user-container { display: flex; margin-top: 5rem; }
-        .sidebar { width: 200px; display: flex; margin-top: 5rem; flex-direction: column; gap: 10px; padding: 10px; }
+        .user-container {
+            display: flex;
+            margin-top: 5rem;
+            /*align-items: center;*/
+            justify-content: center;
+            width: max-content;
+            height: calc(100dvh - 6rem);
+            margin-left: auto;
+            margin-right: auto ;
+
+        }
+        #content{
+            width: 40rem;
+            /*overflow-x: auto;*/
+            /*height: max-content;*/
+            max-height: 100dvh;
+            overflow-y: auto;
+        }
+        #content h1{
+            font-size: 3rem;
+            margin-bottom: 3rem;
+        }
+        .userpage-button{
+            color: hsla(0, 0%, 100%, 0.7);
+            background-color: hsl(0, 0%, 15%);
+            font-size: inherit;
+            padding: 2rem;
+        }
+        input, textarea {
+            padding: 8px;
+            font-size: 14px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+        }
+        .form-group{
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            /*flex-wrap: wrap;*/
+            justify-content: space-between;
+            align-items: center;
+        }
+        .form-group input{
+            background-color: rgba(255,255,255,0.5);
+            border-color: black;
+        }
+        .submit-btn{
+            height: 3rem;
+            width: 12rem;
+            margin: 0.5rem auto;
+        }
+        .submit-btn:disabled{
+            background-color: hsla(0, 0%, 100%, 0.2);
+            color: hsla(0, 0%, 100%, 0.4);
+            cursor: not-allowed;
+        }
+        .submit-btn.danger-btn{
+            background-color: hsla(1, 70%, 50%, 0.8);
+        }
+        .submit-btn.danger-btn:disabled{
+            background-color: hsla(1, 100%, 50%, 0.4);
+        }
+        .userpage-button.active{
+            background-color: darkorange;
+            color: black;
+        }
+        #settings-form{
+            /*max-width: 400px; */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sidebar {
+            /*margin-top: 0;*/
+            width: 200px;
+            display: flex;
+            margin-top: 5rem;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px; }
         #content { flex-grow: 1; padding: 20px; }
+        .modified-dot {
+            display: none;
+            width: 8px;
+            height: 8px;
+            background-color: #28a745;
+            border-radius: 50%;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .modified-dot.active {
+            display: inline-block;
+        }
+        .input-error {
+            border: 2px solid red !important;
+        }
+        @media screen and (orientation: portrait) {
+            .user-container{
+                margin-top: 0;
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                margin-top: 0;
+                flex-direction: row;
+            }
+        }
+
     </style>
 </head>
 <body>

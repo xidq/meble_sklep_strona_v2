@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
 )
 
 var upgrader = websocket.Upgrader{
@@ -27,7 +28,7 @@ var upgrader = websocket.Upgrader{
 
 func main() {
 	config = LoadConfig()
-
+	limiter = rate.NewLimiter(rate.Limit(config.RateLimitRequests), config.RateLimitBurst)
 	if os.Getenv("JWT_SECRET_KEY") == "" {
 		log.Fatal("JWT_SECRET_KEY must be set in .env – required for JWT verification")
 	}
@@ -149,7 +150,11 @@ func main() {
 	// Zapewne masz coś w tym stylu (mux, chi, lub standardowy http.ServeMux):
 	apiMux.HandleFunc("/api/products", getProductsProxyHandler)  // <-- Dla POST/GET
 	apiMux.HandleFunc("/api/products/", getProductsProxyHandler) // <-- Dla PUT/DELETE z ID
+	apiMux.HandleFunc("/api/model_ops", authMiddleware("Admin")(getModelsRefreshHandler))
+	apiMux.HandleFunc("/api/model_ops/", authMiddleware("Admin")(getModelsRefreshHandler))
+	apiMux.HandleFunc("/api/model_ops/refresh", authMiddleware("Admin")(getModelsRefreshHandler))
 	// Endpointy zwrotne, międzyserwerowe
+	apiMux.HandleFunc("/api/sync/all/", authMiddleware("Admin")(syncAllDataHandler))
 	apiMux.HandleFunc("/api/produkty/", rustFilesUploadHandler)
 	apiMux.HandleFunc("/api/upload/json/", rustJsonUploadHandler)
 	apiMux.HandleFunc("/api/products/by-name/", getProductByNameIdProxyHandler)
@@ -164,8 +169,8 @@ func main() {
 
 	apiMux.HandleFunc("/api/login", loginProxyHandler)
 	apiMux.HandleFunc("/api/usr/self/data", authMiddleware("Admin", "User", "Legituser")(getUserOwnData))
-	apiMux.HandleFunc("/api/usr/account", userAccountOperations)
-	apiMux.HandleFunc("/api/usr/account/", userAccountOperations)
+	apiMux.HandleFunc("/api/usr/account", authMiddleware("Admin", "User", "Legituser")(userAccountOperations))
+	apiMux.HandleFunc("/api/usr/account/", authMiddleware("Admin", "User", "Legituser")(userAccountOperations))
 	apiMux.HandleFunc("/api/usr/self/orders", authMiddleware("Admin", "User", "Legituser")(getUserOwnOrders))
 	apiMux.HandleFunc("/api/usr/actions/order", putNewUserOrder)
 	apiMux.HandleFunc("/api/getproducts", getProductsProxyHandler)

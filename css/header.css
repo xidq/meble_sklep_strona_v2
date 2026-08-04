@@ -10,6 +10,15 @@ body {
   background: rgb(20,20,20);
 }
 
+@property --a {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes spin {
+  to { --a: 360deg; }
+}
+
 header {
   position: fixed;
   width: 100%;
@@ -51,7 +60,7 @@ button {
   border: none; border-radius: 4px;
 }
 button:disabled { background: #ccc; }
-.form-group { margin-bottom: 10px; }
+.header-form-group { margin-bottom: 10px; }
 label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
 input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; outline: none; }
 
@@ -68,6 +77,8 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
 #authBtn{
   background-color: rgba(255, 255, 255, 0.8);
   color: black;
+  margin: 10px 0;
+  padding: 10px;
 }
 .dropdown_btn {
   background: transparent;
@@ -129,31 +140,32 @@ input { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; bord
   /* Wnętrze przycisku: stały kolor */
   background-color: hsl(204, 0%, 13%);
 }
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(255, 120, 0, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(255, 120, 0, 0.9));
+  }
+}
 
 .glow {
-
-
-  /* Definiujemy ramkę jako gradient przy użyciu zmiennych */
-  background-image:
-          linear-gradient(hsl(204, 0%, 13%), hsl(204, 0%, 13%)),
-          conic-gradient(from var(--a), transparent, var(--g-color));
   background-clip: padding-box, border-box;
   background-origin: border-box;
-  border: 3px solid transparent;
-  box-shadow: 0 0 black;
-  /* Transition dla zmiennej koloru (działa płynnie!) */
-  transition: --g-color 1s ease, box-shadow 1.5s ease;
-  animation: a 2s linear infinite;
-  filter: glow(rgba(255,255,255,1));
+
+  /* Stan bazowy poświaty (niewidoczny) */
+  filter: drop-shadow(0 0 0px rgba(255, 120, 0, 0));
+
+  /* Po zjechaniu kursorem filtr płynnie wygasa przez 2 sekundy */
+  transition: padding 0.3s ease, filter 2s ease;
 }
 
 .glow:hover {
-  --g-color: hsla(28, 100%, 50%, 1); /* Płynne przejście koloru w 1s */
-  box-shadow: 0 8px 2rem rgba(255, 100, 0, 1);
-  /*filter: drop-shadow(0 0 8px rgba(255, 120, 0, 0.6));*/
+  /* Uruchomienie pulsowania po najechaniu */
+  animation: pulse-glow 3s ease-in-out infinite;
 
-  /*box-shadow: 0 0 20px 2px rgba(255, 120, 0, 0.5);*/
-  /*filter: glow(rgba(255, 120, 0, 0.8), 10px);*/
+  /* Szybki start poświaty przy najechaniu (0.3s) */
+  transition: filter 0.3s ease;
 }
 
 @keyframes a {

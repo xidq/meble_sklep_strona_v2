@@ -1,25 +1,58 @@
 // FUNKCJE POMOCNICZE (FORMAT OBRAZKÓW)
 function createMainImageHTML(imgObject) {
-  if (!imgObject) return '';
+  if (!imgObject || typeof imgObject !== 'object') return '';
+
+  // Dynamiczne pobranie wszystkich kluczy-rozdzielczości z obiektu JSON i posortowanie ich numerycznie malejąco
+  const resolutions = Object.keys(imgObject)
+      .filter(key => !isNaN(key))
+      .sort((a, b) => Number(b) - Number(a));
+
+  if (resolutions.length === 0) return '';
+
+  let sourcesHTML = '';
+  resolutions.forEach(res => {
+    const url = imgObject[res];
+    if (url && typeof url === 'string' && url.length > 5) {
+      sourcesHTML += `<source media="(min-width: ${res}px)" srcset="${encodeURI(url)}">\n`;
+    }
+  });
+
+  // Automatyczny wybór najrozsądniejszego fallbacku (np. 512 lub pierwszego dostępnego)
+  const fallbackKey = resolutions.includes("512") ? "512" : resolutions[resolutions.length - 1];
+  const fallbackUrl = encodeURI(imgObject[fallbackKey] || '');
+
   return `
         <picture class="main_image">
-            <source media="(min-width: 2048px)" srcset="${imgObject["2048"] || ''}">
-            <source media="(min-width: 1024px)" srcset="${imgObject["1024"] || ''}">
-            <source media="(min-width: 512px)" srcset="${imgObject["512"] || ''}">
-            <!-- Optymalizacja: dodano loading="lazy" -->
-            <img src="${imgObject["512"] || imgObject["1024"] || imgObject["2048"] || ''}" alt="Zdjęcie produktu" loading="lazy" />
+            ${sourcesHTML}
+            <img src="${fallbackUrl}" alt="Zdjęcie produktu" loading="lazy" />
         </picture>
     `;
 }
 
 function createThumbImageHTML(imgObject) {
-  if (!imgObject) return '';
+  if (!imgObject || typeof imgObject !== 'object') return '';
+
+  const resolutions = Object.keys(imgObject)
+      .filter(key => !isNaN(key))
+      .sort((a, b) => Number(b) - Number(a));
+
+  if (resolutions.length === 0) return '';
+
+  let sourcesHTML = '';
+  resolutions.forEach(res => {
+    const url = imgObject[res];
+    if (url && typeof url === 'string' && url.length > 5) {
+      sourcesHTML += `<source media="(min-width: ${res}px)" srcset="${encodeURI(url)}">\n`;
+    }
+  });
+
+  const fallbackKey = resolutions.includes("64") ? "64" : resolutions[resolutions.length - 1];
+  const fallbackUrl = encodeURI(imgObject[fallbackKey] || '');
+
   return `
         <picture>
-            <source media="(min-width: 128px)" srcset="${imgObject["128"] || ''}">
-            <source media="(min-width: 64px)" srcset="${imgObject["64"] || ''}">
-            <!-- Optymalizacja: dodano loading="lazy" -->
-            <img src="${imgObject["32"] || imgObject["64"] || ''}" alt="Miniaturka" style="width: 64px; height: auto;" loading="lazy" />
+            ${sourcesHTML}
+            <img src="${fallbackUrl}" alt="Miniaturka" style="width: 64px; height: auto;" loading="lazy" />
         </picture>
     `;
 }

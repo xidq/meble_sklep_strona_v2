@@ -106,12 +106,24 @@ func getUserOwnOrders(w http.ResponseWriter, r *http.Request) {
 	forwardToRust(w, r, r.Method, "/usr/self/orders", true, nil)
 }
 func userAccountOperations(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodPut && r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
+	//if r.Method != http.MethodGet && r.Method != http.MethodPut && r.Method != http.MethodDelete {
+	//	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	//	return
+	//}
+	//forwardToRust(w, r, r.Method, "/usr/usr", true, nil)
+
+	const prefix = "/api/usr/account"
+	targetPath := strings.TrimPrefix(r.URL.Path, prefix)
+
+	if targetPath == "" {
+		targetPath = "/"
 	}
-	// Tutaj wywalało błąd przez próbę przesłania 5 argumentów. Teraz pasuje.[cite: 1]
-	forwardToRust(w, r, r.Method, "/usr/usr", true, nil)
+
+	if r.URL.RawQuery != "" {
+		targetPath += "?" + r.URL.RawQuery
+	}
+
+	forwardToRust(w, r, r.Method, targetPath, true, nil)
 }
 func getUserOwnData(w http.ResponseWriter, r *http.Request) {
 	// sprawdza, czy metoda to GET
@@ -209,6 +221,13 @@ func adminUsersProxyHandler(w http.ResponseWriter, r *http.Request) {
 	targetPath := strings.Replace(r.URL.Path, "/api/admin", "/admin", 1)
 	forwardToRust(w, r, r.Method, targetPath, true, nil)
 }
+func getModelsRefreshHandler(w http.ResponseWriter, r *http.Request) {
+
+	targetPath := strings.Replace(r.URL.Path, "/api/model_ops", "/api/models", 1)
+	//targetPath := strings.TrimPrefix(r.URL.Path, "/api/admin/check_response")
+
+	forwardToRust(w, r, r.Method, targetPath, true, nil)
+}
 func adminResponseCheckProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// r.URL.Path będzie wynosić np. "/admin/usr" lub "/admin/usr/Janusz"
 	// Przekazujemy dokładnie tę samą ścieżkę do Rusta
@@ -264,6 +283,7 @@ func getProductsProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	req.Header = r.Header.Clone()
 	req.Header.Del("Host")
+	req.ContentLength = r.ContentLength
 
 	resp, err := insecureHTTPClient.Do(req)
 	if err != nil {
@@ -954,8 +974,14 @@ func forwardToRust(w http.ResponseWriter, r *http.Request, method string, target
 	req.Header.Del("Host")
 
 	// Jeśli wrzucamy dodatkowe dane z poziomu Go, musimy ustawić nowy Content-Length
+	//if customPayload != nil {
+	//	req.Header.Set("Content-Length", fmt.Sprintf("%d", len(customPayload)))
+	//}
 	if customPayload != nil {
+		req.ContentLength = int64(len(customPayload))
 		req.Header.Set("Content-Length", fmt.Sprintf("%d", len(customPayload)))
+	} else if r.Body != nil {
+		req.ContentLength = r.ContentLength // <-- BRAKUJĄCY KLUCZOWY ELEMENT
 	}
 
 	if req.Header.Get("Content-Type") == "" {
