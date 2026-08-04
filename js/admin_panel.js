@@ -59,6 +59,11 @@ newProductModeBtn.addEventListener('click', () => {
     document.getElementById('p_uploadSection').style.display = 'none';
 
     formTitle.textContent = "🛠️ Dodaj Nowy Produkt";
+    
+    const prodImgPanel = document.querySelector('.prod-img-panel');
+    if (prodImgPanel) {
+        prodImgPanel.innerHTML = `<h3>🖼️ Podgląd zdjęć</h3><p style="color: #666; font-size: 14px;">Produkt w trybie tworzenia (brak zdjęć).</p>`;
+    }
     deselectAll('.product-item');
 });
 
@@ -119,6 +124,7 @@ function selectProductForEdit(product) {
 
     formTitle.textContent = `Edycja: ${product.name_pl || product.name_id}`;
 
+    loadProductImagesForAdmin(product);
     // Zaznaczenie wizualne (musisz dodać klasę w renderProductsList przy kliknięciu)
     deselectAll();
 }
@@ -284,3 +290,134 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+function createMainImageHTML(imgObject) {
+    if (!imgObject || typeof imgObject !== 'object') return '';
+
+    const resolutions = Object.keys(imgObject)
+        .filter(key => !isNaN(key))
+        .sort((a, b) => Number(b) - Number(a));
+
+    if (resolutions.length === 0) return '';
+
+    let sourcesHTML = '';
+    resolutions.forEach(res => {
+        const url = imgObject[res];
+        if (url && typeof url === 'string' && url.length > 5) {
+            sourcesHTML += `<source media="(min-width: ${res}px)" srcset="${encodeURI(url)}">\n`;
+        }
+    });
+
+    const fallbackKey = resolutions.includes("512") ? "512" : resolutions[resolutions.length - 1];
+    const fallbackUrl = encodeURI(imgObject[fallbackKey] || '');
+
+    return `
+        <picture class="main_image">
+            ${sourcesHTML}
+            <img src="${fallbackUrl}" alt="Zdjęcie produktu" loading="lazy" />
+        </picture>
+    `;
+}
+function createThumbImageHTML(imgObject) {
+    if (!imgObject || typeof imgObject !== 'object') return '';
+
+    const resolutions = Object.keys(imgObject)
+        .filter(key => !isNaN(key))
+        .sort((a, b) => Number(b) - Number(a));
+
+    if (resolutions.length === 0) return '';
+
+    let sourcesHTML = '';
+    resolutions.forEach(res => {
+        const url = imgObject[res];
+        if (url && typeof url === 'string' && url.length > 5) {
+            sourcesHTML += `<source media="(min-width: ${res}px)" srcset="${encodeURI(url)}">\n`;
+        }
+    });
+
+    const fallbackKey = resolutions.includes("64") ? "64" : resolutions[resolutions.length - 1];
+    const fallbackUrl = encodeURI(imgObject[fallbackKey] || '');
+
+    return `
+        <picture>
+            ${sourcesHTML}
+            <img src="${fallbackUrl}" alt="Miniaturka" loading="lazy" />
+        </picture>
+    `;
+}
+async function loadProductImagesForAdmin(product) {
+    const prodImgPanel = document.querySelector('.prod-img-panel');
+    if (!prodImgPanel) return;
+
+    prodImgPanel.innerHTML = `<h3>🖼️ Podgląd zdjęć</h3><p style="color: #666; font-size: 14px;">Ładowanie zdjęć...</p>`;
+
+    try {
+        const responseRouter = await fetch('/data/router.json');
+        if (!responseRouter.ok) {
+            prodImgPanel.innerHTML = `<h3>🖼️ Podgląd zdjęć</h3><p style="color: #666; font-size: 14px;">Brak pliku router.json</p>`;
+            return;
+        }
+        const routerData = await responseRouter.json();
+
+        // Szukamy pasującego wpisu w routerze po name_id lub id
+        const targetItem = routerData.find(item => item.id === product.name_id || item.id === product.id?.toString());
+
+        if (!targetItem || !targetItem.img) {
+            prodImgPanel.innerHTML = `<h3>🖼️ Podgląd zdjęć</h3><p style="color: #666; font-size: 14px;">Brak przypisanych zdjęć dla tego produktu.</p>`;
+            return;
+        }
+
+        const resImg = await fetch(targetItem.img);
+        if (!resImg.ok) {
+            prodImgPanel.innerHTML = `<h3>🖼️ Podgląd zdjęć</h3><p style="color: #666; font-size: 14px;">Nie udało się pobrać pliku ze zdjęciami.</p>`;
+            return;
+        }
+
+        const imgData = await resImg.json();
+
+        // Wyciągamy klucze wariantów zdjęć (np. var_1, var_2...)
+        const imagesList = Object.keys(imgData)
+            .filter(key => key.startsWith('var_'))
+            .sort((a, b) => a.localeCompare(b, undefined, {numeric: true}))
+            .map(key => imgData[key]);
+
+        if (imagesList.length === 0) {
+            prodImgPanel.innerHTML = `<h3>🖼️ Podgląd zdjęć</h3><p style="color: #666; font-size: 14px;">Brak wariantów zdjęć.</p>`;
+            return;
+        }
+
+        prodImgPanel.innerHTML = `
+            <h3>🖼️ Podgląd zdjęć</h3>
+            <div class="main-image-container" id="admin-main-img-container">
+                ${createMainImageHTML(imagesList[0])}
+            </div>
+            <div class="thumbnails-container" id="admin-thumbs-container"></div>
+        `;
+
+        const thumbsContainer = prodImgPanel.querySelector('.thumbnails-container');
+        const mainContainer = prodImgPanel.querySelector('.main-image-container');
+
+        imagesList.forEach((imgObj, idx) => {
+            const thumbWrapper = document.createElement('div');
+            thumbWrapper.className = 'thumb-wrapper';
+            if (idx === 0) thumbWrapper.classList.add('active');
+
+            thumbWrapper.innerHTML = createThumbImageHTML(imgObj);
+
+            thumbWrapper.addEventListener('click', () => {
+                thumbsContainer.querySelectorAll('.thumb-wrapper').forEach(t => t.classList.remove('active'));
+                thumbWrapper.classList.add('active');
+
+                if (mainContainer) {
+                    mainContainer.innerHTML = createMainImageHTML(imgObj);
+                }
+            });
+
+            thumbsContainer.appendChild(thumbWrapper);
+        });
+
+    } catch (err) {
+        console.error("Błąd ładowania zdjęć w panelu admina:", err);
+        prodImgPanel.innerHTML = `<h3>🖼️ Podgląd zdjęć</h3><p style="color: red; font-size: 14px;">Błąd wczytywania.</p>`;
+    }
+}

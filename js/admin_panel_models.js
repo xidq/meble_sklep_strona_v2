@@ -111,7 +111,7 @@ function renderModelsUI() {
                     </div>
 
                     <button type="submit" id="uploadModelBtn" style="background: #28a745; color: white; width: 100%; padding: 10px; font-size: 16px; border: none; border-radius: 4px; cursor: pointer;">
-                        🚀 Wyślij Model i Tekstury na Serwer
+                        Wyślij Model i Tekstury na Serwer
                     </button>
                 </form>
 
@@ -141,7 +141,7 @@ async function populateProductsDropdown() {
 
         products.forEach(product => {
             const opt = document.createElement('option');
-            opt.value = product.name_id; // Używamy name_id jako klucza ścieżki
+            opt.value = product.name_id;
             opt.dataset.id = product.id;
             opt.dataset.nameId = product.name_id;
             opt.textContent = `[ID: ${product.id}] ${product.name_pl || product.name_id} (${product.name_id})`;

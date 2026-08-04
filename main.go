@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
 )
 
 var upgrader = websocket.Upgrader{
@@ -27,7 +28,7 @@ var upgrader = websocket.Upgrader{
 
 func main() {
 	config = LoadConfig()
-
+	limiter = rate.NewLimiter(rate.Limit(config.RateLimitRequests), config.RateLimitBurst)
 	if os.Getenv("JWT_SECRET_KEY") == "" {
 		log.Fatal("JWT_SECRET_KEY must be set in .env – required for JWT verification")
 	}
@@ -168,8 +169,8 @@ func main() {
 
 	apiMux.HandleFunc("/api/login", loginProxyHandler)
 	apiMux.HandleFunc("/api/usr/self/data", authMiddleware("Admin", "User", "Legituser")(getUserOwnData))
-	apiMux.HandleFunc("/api/usr/account", userAccountOperations)
-	apiMux.HandleFunc("/api/usr/account/", userAccountOperations)
+	apiMux.HandleFunc("/api/usr/account", authMiddleware("Admin", "User", "Legituser")(userAccountOperations))
+	apiMux.HandleFunc("/api/usr/account/", authMiddleware("Admin", "User", "Legituser")(userAccountOperations))
 	apiMux.HandleFunc("/api/usr/self/orders", authMiddleware("Admin", "User", "Legituser")(getUserOwnOrders))
 	apiMux.HandleFunc("/api/usr/actions/order", putNewUserOrder)
 	apiMux.HandleFunc("/api/getproducts", getProductsProxyHandler)

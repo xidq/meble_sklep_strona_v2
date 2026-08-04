@@ -24,35 +24,35 @@ const headerHTML = `
                 <div id="authFormSection">
                     <h3 id="authTitle" style="margin-top: 0;">Logowanie do systemu</h3>
                     <div id="loginFields">
-                        <div class="form_group">
-                            <label>Nazwa użytkownika:</label>
-                            <input type="text" id="username" autocomplete="username">
+                        <div class="header-form-group">
+                            <label for="username">Nazwa użytkownika:</label>
+                            <input type="text" id="username" name="username" autocomplete="username">
                         </div>
-                        <div class="form_group">
-                            <label>Hasło:</label>
-                            <input type="password" id="password" autocomplete="current-password">
+                        <div class="header-form-group">
+                            <label for="password">Hasło:</label>
+                            <input type="password" id="password" name="password" autocomplete="current-password">
                         </div>
                     </div>
                     
                     <div id="registerFields" style="display: none;">
-                        <div class="form_group">
-                            <label>Nazwa użytkownika (rejestracja):</label>
-                            <input type="text" id="reg_username" autocomplete="off">
+                        <div class="header-form-group">
+                            <label for="reg_username">Nazwa użytkownika (rejestracja):</label>
+                            <input type="text" id="reg_username" name="reg_username" autocomplete="off">
                         </div>
-                        <div class="form_group">
-                            <label>Hasło (rejestracja):</label>
-                            <input type="password" id="reg_password" autocomplete="new-password">
+                        <div class="header-form-group">
+                            <label for="reg_password">Hasło (rejestracja):</label>
+                            <input type="password" id="reg_password" name="reg_password" autocomplete="new-password">
                         </div>
-                        <div class="form_group">
-                            <label>Powtórz hasło:</label>
-                            <input type="password" id="confirmPassword" autocomplete="new-password">
+                        <div class="header-form-group">
+                            <label for="confirmPassword">Powtórz hasło:</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password">
                         </div>
                     </div>
-                    <div class="form_group registration_field" style="display: none;">
-                        <label>Email:</label>
-                        <input type="email" id="email" placeholder="email@example.com">
+                    <div class="header-form-group registration_field" style="display: none;">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" autocomplete="email" placeholder="email@example.com">
                     </div>
-                    <div class="form_group registration_field" style="display: none;">
+                    <div class="header-form-group registration_field" style="display: none;">
                         <label style="font-size: 11px;">
                             <input type="checkbox" id="termsCheck"> Akceptuję <a href="#" id="openTerms" style="color: blue; text-decoration: underline;">regulamin</a>
                         </label>
@@ -429,6 +429,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setProfileUI(null);
     if (el.passwordInput) el.passwordInput.value = "";
     setAuthMessage("Wylogowano pomyślnie.", false, true);
+
+    sessionStorage.removeItem('cachedUser');
+    localStorage.removeItem('currentUser');
+
+    // Odświeżenie strony, aby wymusić ponowną weryfikację uprawnień / zablokować dostęp
+    window.location.reload();
   });
 
   //  POBIERANIE DANYCH UŻYTKOWNIKA 
