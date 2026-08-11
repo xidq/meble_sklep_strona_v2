@@ -10,9 +10,7 @@ const saveOrderBtn = document.getElementById('saveOrderBtn');
 document.addEventListener('DOMContentLoaded', () => {
     const ordersTabBtn = document.querySelector('[data-tab="tab-orders"]');
     if (ordersTabBtn) {
-        ordersTabBtn.addEventListener('click', () => {
-            fetchOrders();
-        });
+        ordersTabBtn.addEventListener('click', fetchOrders);
     }
 
     // Dodanie kontenera na listę produktów jeśli nie istnieje dynamicznie
@@ -79,7 +77,12 @@ async function fetchOrders() {
                 'Authorization': `Bearer ${currentUser?.token || ''}`
             }
         });
-        if (!response.ok) throw new Error("Błąd pobierania listy zamówień");
+        if (!response.ok) {
+            if (ordersContainer) {
+                ordersContainer.innerHTML = `<span style="color:red">Błąd pobierania listy zamówień</span>`;
+            }
+            return;
+        }
 
         allOrders = await response.json();
         renderOrdersList();
@@ -198,7 +201,12 @@ async function selectOrderForEdit(orderId) {
             }
         });
 
-        if (!response.ok) throw new Error(`Błąd HTTP: ${response.status}`);
+        if (!response.ok) {
+            if (ordersContainer) {
+                ordersContainer.innerHTML = `<span style="color:red">Błąd HTTP: ${response.status}</span>`;
+            }
+            return;
+        }
 
         const data = await response.json();
         const d = data.dane || data;

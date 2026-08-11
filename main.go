@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -213,7 +214,7 @@ func main() {
 
 	go func() {
 		log.Printf("🌐 WWW Server on https://%s:%s", adresWWW, portWWW)
-		if err := srvWWW.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && err != http.ErrServerClosed {
+		if err := srvWWW.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal("WWW Server: ", err)
 		}
 	}()
@@ -226,7 +227,7 @@ func main() {
 
 	go func() {
 		log.Printf("🔌 API Server on https://%s:%s", adresWWW, portAPI)
-		if err := srvAPI.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && err != http.ErrServerClosed {
+		if err := srvAPI.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal("API Server: ", err)
 		}
 	}()

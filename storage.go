@@ -205,32 +205,35 @@ func rustFilesUploadHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		file, err := fileHeader.Open()
+		err := func() error {
+			file, err := fileHeader.Open()
+			if err != nil {
+				return err
+			}
+			defer func(file multipart.File) {
+				if err := file.Close(); err != nil {
+					log.Printf("UploadHandler error closing file: %v", err)
+				}
+			}(file)
+
+			out, err := os.Create(filepath.Join(currentTargetDir, fileHeader.Filename))
+			if err != nil {
+				return err
+			}
+			defer func(out *os.File) {
+				if err := out.Close(); err != nil {
+					log.Printf("UploadHandler error closing out file: %v", err)
+				}
+			}(out)
+
+			if _, err = io.Copy(out, file); err != nil {
+				return fmt.Errorf("błąd podczas zapisu strumienia pliku: %w", err)
+			}
+			return nil
+		}()
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer func(file multipart.File) {
-			err := file.Close()
-			if err != nil {
-				log.Printf("UploadHandler error %v", err)
-			}
-		}(file)
-
-		out, err := os.Create(filepath.Join(currentTargetDir, fileHeader.Filename))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer func(out *os.File) {
-			err := out.Close()
-			if err != nil {
-				log.Printf("UploadHandler error %v", err)
-			}
-		}(out)
-
-		if _, err = io.Copy(out, file); err != nil {
-			http.Error(w, "Błąd podczas zapisu strumienia pliku", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -240,7 +243,7 @@ func rustFilesUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if modelTargetDir != "" {
 		hasModelFiles := false
 
-		// Sprawdzamy, czy wgrano jakiekolwiek pliki modelu lub tekstury
+		// Sprawdza czy wgrano jakiekolwiek pliki modelu lub tekstury
 		for _, fileHeader := range files {
 			ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 			if ext == ".glb" || ext == ".gltf" || ext == ".dds" {

@@ -126,7 +126,9 @@ function selectProductForEdit(product) {
 
     formTitle.textContent = `Edycja: ${product.name_pl || product.name_id}`;
 
-    loadProductImagesForAdmin(product);
+    loadProductImagesForAdmin(product).catch((err) => {
+        console.error("Błąd podczas ładowania zdjęć produktu:", err);
+    });
     // Zaznaczenie wizualne (musisz dodać klasę w renderProductsList przy kliknięciu)
     deselectAll();
 }

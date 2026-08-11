@@ -5,14 +5,18 @@ document.addEventListener('DOMContentLoaded', () => {
     tabButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.getAttribute('data-tab') === 'tab-models') {
-                initModelsTab();
+                initModelsTab().catch((err) => {
+                    console.error("Błąd podczas inicjalizacji zakładki modeli:", err);
+                });
             }
         });
     });
 
     const modelsTab = document.getElementById('tab-models');
     if (modelsTab && modelsTab.classList.contains('active')) {
-        initModelsTab();
+        initModelsTab().catch((err) => {
+            console.error("Błąd podczas inicjalizacji zakładki modeli:", err);
+        });
     }
 });
 

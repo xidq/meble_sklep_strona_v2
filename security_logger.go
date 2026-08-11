@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 	//     "time"
 	"fmt"
 )
@@ -22,13 +23,14 @@ func init() {
 }
 
 // LogSecurity – zapisuje zdarzenie z kontekstem
-func LogSecurity(event string, details map[string]interface{}) {
+func LogSecurity(event string, details map[string]any) {
 	if securityLog == nil {
 		return
 	}
-	msg := fmt.Sprintf("%s | ", event)
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("%s | ", event))
 	for k, v := range details {
-		msg += fmt.Sprintf("%s=%v ", k, v)
+		msg.WriteString(fmt.Sprintf("%s=%v ", k, v))
 	}
-	securityLog.Println(msg)
+	securityLog.Println(msg.String())
 }

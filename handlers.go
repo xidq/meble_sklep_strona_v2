@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -44,7 +45,7 @@ type JWTClaims struct {
 	Exp      int64  `json:"exp"`
 }
 
-// Implementacja interfejsu jwt.Claims
+// GetExpirationTime Implementacja interfejsu jwt.Claims
 func (c JWTClaims) GetExpirationTime() (*jwt.NumericDate, error) {
 	return jwt.NewNumericDate(time.Unix(c.Exp, 0)), nil
 }
@@ -1136,13 +1137,7 @@ func authMiddleware(allowedRoles ...string) func(http.HandlerFunc) http.HandlerF
 
 			// sprawdza rolę
 			if len(allowedRoles) > 0 {
-				roleOk := false
-				for _, role := range allowedRoles {
-					if claims.Role == role {
-						roleOk = true
-						break
-					}
-				}
+				roleOk := slices.Contains(allowedRoles, claims.Role)
 				if !roleOk {
 					LogSecurity("API_ACCESS_DENIED", map[string]any{
 						"path":           r.URL.Path,
@@ -1190,10 +1185,8 @@ func checkUserRole(r *http.Request, allowedRoles ...string) bool {
 		return false
 	}
 
-	for _, role := range allowedRoles {
-		if claims.Role == role {
-			return true
-		}
+	if slices.Contains(allowedRoles, claims.Role) {
+		return true
 	}
 
 	LogSecurity("ACCESS_DENIED", map[string]any{
@@ -1322,7 +1315,7 @@ func loginProxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ratelimit auth
+// AuthLimiter ratelimit auth
 type AuthLimiter struct {
 	sync.Mutex
 	attempts map[string][]time.Time
