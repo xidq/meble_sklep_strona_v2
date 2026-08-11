@@ -10,6 +10,19 @@ function createMainImageHTML(imgObject) {
   if (resolutions.length === 0) return '';
 
   let sourcesHTML = '';
+  // resolutions.forEach(res => {
+  //   const url = imgObject[res];
+  //   if (url && typeof url === 'string' && url.length > 5) {
+  //     sourcesHTML += `<source media="(min-width: ${res}px)" srcset="${encodeURI(url)}">\n`;
+  //   }
+  // });
+  const portraitTargetKey = resolutions.find(res => Number(res) >= 1024) || resolutions[0];
+  const portraitTargetUrl = imgObject[portraitTargetKey];
+
+  if (portraitTargetUrl && typeof portraitTargetUrl === 'string' && portraitTargetUrl.length > 5) {
+    sourcesHTML += `<source media="(orientation: portrait) and (min-width: 700px)" srcset="${encodeURI(portraitTargetUrl)}">\n`;
+  }
+
   resolutions.forEach(res => {
     const url = imgObject[res];
     if (url && typeof url === 'string' && url.length > 5) {
@@ -17,7 +30,6 @@ function createMainImageHTML(imgObject) {
     }
   });
 
-  // Automatyczny wybór najrozsądniejszego fallbacku (np. 512 lub pierwszego dostępnego)
   const fallbackKey = resolutions.includes("512") ? "512" : resolutions[resolutions.length - 1];
   const fallbackUrl = encodeURI(imgObject[fallbackKey] || '');
 

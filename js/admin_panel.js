@@ -115,6 +115,8 @@ function selectProductForEdit(product) {
     document.getElementById('p_wood_qua').value = product.wood_qua || 0;
     document.getElementById('p_metal_qua').value = product.metal_qua || 0;
     document.getElementById('p_glass_qua').value = product.glass_qua || 0;
+    document.getElementById('p_plastik_qua').value = product.plastik_qua || 0;
+    document.getElementById('p_texture_scale').value = product.texture_scale || 1;
 
     document.getElementById('p_name_id').readOnly = true;
     document.getElementById('p_name_id').style.background = '#eee';
@@ -152,7 +154,9 @@ saveProductBtn.addEventListener('click', async () => {
         depth: val('p_depth', true),
         wood_qua: val('p_wood_qua', true),
         metal_qua: val('p_metal_qua', true),
-        glass_qua: val('p_glass_qua', true)
+        glass_qua: val('p_glass_qua', true),
+        plastik_qua: val('p_plastik_qua', true),
+        texture_scale: val('p_texture_scale', true),
     };
 
     console.log("Wysyłam obiekt:", productPayload);

@@ -11,6 +11,7 @@ let shadowGenerator;
 
 
 let loadedMeshes = [];
+let loadedAnimationGroups = [];
 let selectedModelDetails = null;
 
 // Słowniki danych z JSON-ów
@@ -18,12 +19,6 @@ let woodTexturesData = [];
 let metalMaterialsData = [];
 let glassMaterialsData = [];
 
-// Przechowalnia referencji do oryginalnych materiałów z pliku GLB
-// let defaultMaterials = {
-//     Wood: null,
-//     Metal: null,
-//     Glass: null
-// };
 let activeWoodTextureResolution = "4k";
 
 let activeSelections = {
@@ -35,11 +30,12 @@ const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 const CONFIG = isMobile ? {
     shadowMapSize: 1024,
     bloomKernel: 16,
-    motionBlurSamples: 8,
-    fxaaEnabled: false,
-    samples: 1,
+    motionBlurSamples: 0,
+    fxaaEnabled: true,
+    samples: 4,
     tekstury: "2k",
     modele: "LOD1", // Zmieniaj tutaj na LOD0, LOD1, LOD2 itp.
+    motionBlur: 1.0,
 } : {
     shadowMapSize: 2048,
     bloomKernel: 64,
@@ -48,6 +44,7 @@ const CONFIG = isMobile ? {
     samples: 8,
     tekstury: "2k",
     modele: "LOD1",
+    motionBlur: 2.0,
 };
 
 // Klasyfikacja meshy według typu
@@ -72,6 +69,45 @@ const textureCache = new Map();
  * @returns {Object}
  */
 
+function getMeshExtras(mesh) {
+    if (!mesh) return null;
+    const extract = (m) => m?.metadata?.gltf?.extras || m?.metadata?.extras || m?.metadata;
+
+    let extras = extract(mesh);
+    if (extras && (extras.animOpen || extras.animClose)) return extras;
+
+    if (mesh.parent) {
+        extras = extract(mesh.parent);
+        if (extras && (extras.animOpen || extras.animClose)) return extras;
+    }
+
+    return null;
+}
+function toggleDoorAnimation(mesh, extras) {
+    if (mesh._isOpen === undefined) {
+        mesh._isOpen = false;
+    }
+
+    const targetAnimName = mesh._isOpen ? extras.animClose : extras.animOpen;
+    const animGroup = loadedAnimationGroups.find(ag => ag.name === targetAnimName);
+
+    if (!animGroup) {
+        console.warn(`Nie znaleziono animacji o nazwie: ${targetAnimName}`);
+        return;
+    }
+
+
+    if (animGroup.isPlaying) return;
+
+    animGroup.targetedAnimations.forEach((ta) => {
+        const target = ta.target;
+        if (target !== mesh && target !== mesh.parent && target.name !== mesh.name) {
+        }
+    });
+
+    animGroup.play(false);
+    mesh._isOpen = !mesh._isOpen;
+}
 
 function calculateConductorF0(n, k) {
     const calcChannel = (nVal, kVal) => {
@@ -142,31 +178,13 @@ function initBabylon() {
     const canvas = document.getElementById("renderCanvas");
     canvas.style.filter = "blur(0.2px)";
 
-    // const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
-    // const CONFIG = isMobile ? {
-    //     shadowMapSize: 1024,
-    //     bloomKernel: 16,
-    //     motionBlurSamples: 8,
-    //     fxaaEnabled: false,
-    //     samples: 1,
-    //     tekstury: "2k",
-    //     modele: "LOD1",
-    // } : {
-    //     shadowMapSize: 2048,
-    //     bloomKernel: 64,
-    //     motionBlurSamples: 16,
-    //     fxaaEnabled: true,
-    //     samples: 8,
-    //     tekstury: "2k",
-    //     modele: "LOD1",
-    // };
-
     activeWoodTextureResolution = CONFIG.tekstury;
 
     engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
     scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color4(0.08, 0.08, 0.08, 1.0);
+
+    scene.hoverCursor = "pointer";
 
     camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 4, Math.PI / 3, 4, BABYLON.Vector3.Zero(), scene);
     camera.attachControl(canvas, true);
@@ -176,40 +194,26 @@ function initBabylon() {
     camera.upperBetaLimit = Math.PI / 2 - 0.05;
     camera.minZ = 0.01;
     camera.maxZ = 100.0;
+    camera.wheelPrecision = 30;
 
-    // --- OŚWIETLENIE I CIENIE ---
-    // const dirLight = new BABYLON.PointLight("dirLight", new BABYLON.Vector3(-2, -3, -1), scene);
+
     const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-5, -9, -5), scene);
 
-    // dirLight.position = new BABYLON.Vector3(3, 9, 3);
     dirLight.intensity = 3;
 
     dirLight.shadowMinZ = 0.1;
     dirLight.shadowMaxZ = 20;
-    // dirLight.autoCalcShadowZBounds = true;
 
     shadowGenerator = new BABYLON.ShadowGenerator(CONFIG.shadowMapSize, dirLight, true);
     shadowGenerator.useContactHardeningShadow = true;
-    // shadowGenerator.contactHardeningLightSizeUVRatio = 0.012;    // shadowGenerator.usePercentageCloserFiltering = true;
 
     shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
     shadowGenerator.bias = 0.001;
     shadowGenerator.normalBias = 0.01;
-    shadowGenerator.darkness = 0.001;
+    shadowGenerator.darkness = 0.0001;
     shadowGenerator.transparencyShadow = true;
 
     window.addEventListener("resize", () => { engine.resize(); });
-
-    // Environment & Post-processing
-    // const legacyEnv = new BABYLON.CubeTexture(
-    //     "/data/env/a",
-    //     scene,
-    //     ["_px.jpg", "_py.jpg", "_pz.jpg", "_nx.jpg", "_ny.jpg", "_nz.jpg"]
-    // );
-    //
-    // if (legacyEnv.updateLightingInfo) legacyEnv.updateLightingInfo();
-    // scene.environmentTexture = legacyEnv;
-    // scene.environmentIntensity = 1.0;
     scene.environmentTexture = new BABYLON.CubeTexture(
         "/data/env/a",
         scene,
@@ -230,9 +234,9 @@ function initBabylon() {
     pipeline.samples = CONFIG.samples;
 
     const motionBlur = new BABYLON.MotionBlurPostProcess("mb", scene, 1.0, camera);
-    motionBlur.motionStrength = 2.0;
+    motionBlur.motionStrength = CONFIG.motionBlur;
     motionBlur.motionBlurSamples = CONFIG.motionBlurSamples;
-    motionBlur.disableObjectBasedMotionBlur = true;
+    motionBlur.disableObjectBasedMotionBlur = false;
 
     engine.runRenderLoop(() => { scene.render(); });
 }
@@ -245,7 +249,7 @@ async function startConfigurator() {
     // Pokaż overlay i zainicjuj pasek
     const overlay = document.getElementById('loading-overlay');
     if (overlay) {
-        overlay.style.display = 'flex';   // lub 'block' – jak w Twoim CSS
+        overlay.style.display = 'flex';
         overlay.style.opacity = '1';
     }
     updateLoadingProgress(0);
@@ -279,22 +283,16 @@ async function startConfigurator() {
             fetch('/data/textures/glass_material.json').then(r => { onRequestComplete(); return r.json(); })
         ]);
 
-        updateLoadingProgress(40); // dane gotowe
+        updateLoadingProgress(40);
 
-        // let modelJson = Array.isArray(modelJsonRaw) ? modelJsonRaw[0] : modelJsonRaw;
-        // const currentLang = localStorage.getItem('user-lang') || 'pl';
-        // document.getElementById('model-title').innerText = productData[`name_${currentLang}`] || productData.name_pl || productData.name_id;
         let modelJson = Array.isArray(modelJsonRaw) ? modelJsonRaw[0] : modelJsonRaw;
         const currentLang = localStorage.getItem('user-lang') || 'pl';
         document.getElementById('model-title').innerText = productData[`name_${currentLang}`] || productData.name_pl || productData.name_id;
 
-        // --- DOBIERANIE ŚCIEŻKI MODELU NA PODSTAWIE CONFIG.modele ---
-        const preferredLod = CONFIG.modele; // np. "LOD1"
+        const preferredLod = CONFIG.modele;
 
-        // 1. Sprawdzamy czy dany LOD istnieje w JSON i nie jest null/pusty
         let selectedGlbPath = modelJson[preferredLod];
 
-        // 2. Fallback: jeśli preferowany LOD jest null, szukamy pierwszego dostępnego (LOD0 -> LOD1 -> LOD2 -> LOD3 -> model)
         if (!selectedGlbPath) {
             const lodOrder = ["LOD0", "LOD1", "LOD2", "LOD3", "model"];
             for (const lodKey of lodOrder) {
@@ -305,12 +303,11 @@ async function startConfigurator() {
             }
         }
 
-        // 3. Fallback dla tekstury AO (obsługuje klucze ao_texture oraz ao)
         const selectedAoPath = modelJson.ao_texture || modelJson.ao || null;
         selectedModelDetails = {
             model: selectedGlbPath,
             ao: selectedAoPath,
-            texture_scale: modelJson.wood || 1.0,
+            texture_scale: modelJson.scale || 1.0,
             basePrice: parseFloat(productData.price) || 0,
             mkw: parseFloat(modelJson.wood ?? productData.wood) || 1.0,
             ilosc_metal: parseFloat(modelJson.metal ?? productData.metal) || 0.0,
@@ -322,7 +319,6 @@ async function startConfigurator() {
         glassMaterialsData = glassRaw.map(item => ({...item, price: item.cena || item.price}));
 
         buildMaterialDropdowns();
-        // loadGlbModel(selectedModelDetails.model, selectedModelDetails);
         if (selectedModelDetails.model) {
             loadGlbModel(selectedModelDetails.model, selectedModelDetails);
         } else {
@@ -341,7 +337,6 @@ async function startConfigurator() {
     }
 }
 
-// Ładowanie modelu i mapowanie slotów materiałowych (Zoptymalizowane pod kątem braku zwiechy)
 function loadGlbModel(glbUrl, modelDetails) {
     const lastSlash = glbUrl.lastIndexOf('/');
     const rootPath = glbUrl.substring(0, lastSlash + 1);
@@ -357,9 +352,11 @@ function loadGlbModel(glbUrl, modelDetails) {
     }
 
     BABYLON.SceneLoader.ImportMesh("", rootPath, fileName, scene,
-        // --- onSuccess (bez zmian, tylko drobna modyfikacja na końcu) ---
-        (meshes) => {
+        (meshes, particleSystems, skeletons, animationGroups) => {
             loadedMeshes = meshes;
+            loadedAnimationGroups = animationGroups || [];
+            loadedAnimationGroups.forEach(ag => ag.stop());
+
             const rootMesh = meshes[0];
             const bounds = rootMesh.getHierarchyBoundingVectors(true);
             const size = bounds.max.subtract(bounds.min);
@@ -393,7 +390,26 @@ function loadGlbModel(glbUrl, modelDetails) {
 
                 mesh.freezeWorldMatrix();
                 mesh.doNotSyncBoundingInfo = true;
-                mesh.isPickable = false;
+                // mesh.isPickable = false;
+
+                const extras = getMeshExtras(mesh);
+                if (extras && extras.animOpen && extras.animClose) {
+                    mesh.isPickable = true;
+                    mesh.unfreezeWorldMatrix();
+                    mesh.actionManager = new BABYLON.ActionManager(scene);
+                    mesh.actionManager.registerAction(
+                        new BABYLON.ExecuteCodeAction(
+                            BABYLON.ActionManager.OnPickTrigger,
+                            () => {
+                                toggleDoorAnimation(mesh, extras);
+                            }
+                        )
+                    );
+                } else {
+                    mesh.isPickable = false;
+                    mesh.freezeWorldMatrix();
+                }
+
                 shadowGenerator.addShadowCaster(mesh);
                 mesh.receiveShadows = true;
 
@@ -431,7 +447,6 @@ function loadGlbModel(glbUrl, modelDetails) {
                 }, 2000);
             });
 
-            // MODEL GOTOWY – ustawiamy 100% i chowamy overlay
             updateLoadingProgress(100);
 
             const overlay = document.getElementById('loading-overlay');
@@ -448,7 +463,6 @@ function loadGlbModel(glbUrl, modelDetails) {
             });
         },
 
-        // --- onProgress (NOWOŚĆ) ---
         (evt) => {
             if (evt.lengthComputable) {
                 modelProgress(evt.loaded, evt.total);
@@ -467,7 +481,6 @@ function loadGlbModel(glbUrl, modelDetails) {
     );
 }
 
-// Budowanie dynamicznych dropdownów uzależnionych od obecności w modelu
 function buildMaterialDropdowns() {
     const container = document.getElementById('dynamic-slots');
     container.innerHTML = '';
